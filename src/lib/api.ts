@@ -1,7 +1,7 @@
 // lib/api.ts
 export async function fetchTenderData(campus: string) {
     try {
-      const response = await fetch(`http://localhost:3000/api/tenders/${campus}`, {
+      const response = await fetch(`/api/tenders/${campus}`, {
         next: { revalidate: 3600 } // Revalidate every hour
       });
 
