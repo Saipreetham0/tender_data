@@ -63,20 +63,14 @@
 //   }
 // }
 
-
 import { NextResponse } from "next/server";
 import axios from "axios";
 import * as cheerio from "cheerio";
 import { Tender, APIResponse } from "@/lib/types";
 import { fixRelativeUrl, handleScrapingError } from "@/lib/utils";
 
-// Set edge runtime for better performance
-export const config = {
-  runtime: 'edge',
-};
-
-// Revalidate on every request
-export const revalidate = 0;
+// Correct way to set edge runtime in Next.js 14+
+export const runtime = "edge";
 
 async function scrapeBasarTenders(): Promise<Tender[]> {
   try {
