@@ -19,10 +19,10 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.453.0",
-    "next": "14.2.15",
+    "next": "15.2.4",
     "puppeteer": "^23.6.0",
-    "react": "^18",
-    "react-dom": "^18",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7"
   },
