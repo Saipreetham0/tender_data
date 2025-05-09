@@ -82,6 +82,12 @@ const TenderDashboard: React.FC = () => {
       icon: Building2,
       mainSiteUrl: "https://www.rgukt.ac.in/tenders.html",
     },
+     {
+      id: "sklm",
+      name: "sklm",
+      icon: Building2,
+      mainSiteUrl: "https://rguktsklm.ac.in/tenders",
+    },
   ];
 
   useEffect(() => {
