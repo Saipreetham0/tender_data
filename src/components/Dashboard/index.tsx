@@ -549,48 +549,7 @@ const TenderDashboard: React.FC = () => {
     }
   };
 
-  // Handle email subscription
-  // const handleSubscribe = async (e: React.FormEvent) => {
-  //   e.preventDefault();
 
-  //   if (!subscriptionEmail) {
-  //     setSubscribeMessage({
-  //       type: 'error',
-  //       message: 'Please enter a valid email address'
-  //     });
-  //     return;
-  //   }
-
-  //   setSubscribing(true);
-  //   setSubscribeMessage(null);
-
-  //   try {
-  //     // This would be replaced with an actual API call to your subscription endpoint
-  //     // const response = await fetch('/api/subscribe', {
-  //     //   method: 'POST',
-  //     //   headers: { 'Content-Type': 'application/json' },
-  //     //   body: JSON.stringify({ email: subscriptionEmail, campus: selectedCampus })
-  //     // });
-
-  //     // Simulate API call
-  //     await new Promise(resolve => setTimeout(resolve, 1000));
-
-  //     setSubscribeMessage({
-  //       type: 'success',
-  //       message: `Successfully subscribed to ${campuses.find(c => c.id === selectedCampus)?.name} notifications!`
-  //     });
-
-  //     setSubscriptionEmail('');
-  //   } catch (err) {
-  //     console.error('Subscription error:', err);
-  //     setSubscribeMessage({
-  //       type: 'error',
-  //       message: 'Failed to subscribe. Please try again later.'
-  //     });
-  //   } finally {
-  //     setSubscribing(false);
-  //   }
-  // };
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -647,6 +606,7 @@ const TenderDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchData();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dataSource]);
 
   const handleRefresh = () => {
