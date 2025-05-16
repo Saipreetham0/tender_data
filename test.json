@@ -4,6 +4,7 @@
       "path": "/api/cron?key=${CRON_API_SECRET_KEY}",
       "schedule": "0 * * * *"
     }
+    
   ],
   "buildCommand": "next build",
   "installCommand": "npm install",
