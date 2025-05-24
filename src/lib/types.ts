@@ -38,7 +38,6 @@
 //   [key: string]: TenderData;
 // }
 
-
 // src/lib/types.ts
 export interface TenderDownloadLink {
   text: string;
@@ -59,6 +58,7 @@ export interface APIResponse {
   error?: string;
   timestamp: string;
   source: string;
+  message?: string;
 }
 
 export interface DownloadLink {
