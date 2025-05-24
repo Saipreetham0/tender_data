@@ -41,8 +41,9 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { initDatabase } from "@/lib/db-schema";
+// import { initDatabase } from "@/lib/db-schema";
 import { AuthProvider } from "@/contexts/AuthContext";
+import Navbar from "@/components/NavBar";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -53,11 +54,11 @@ export const metadata: Metadata = {
 };
 
 // Initialize database tables on app start (server-side only)
-if (typeof window === "undefined") {
-  initDatabase()
-    .then(() => console.log("Database initialized"))
-    .catch((err) => console.error("Failed to initialize database:", err));
-}
+// if (typeof window === "undefined") {
+//   initDatabase()
+//     .then(() => console.log("Database initialized"))
+//     .catch((err) => console.error("Failed to initialize database:", err));
+// }
 
 export default function RootLayout({
   children,
@@ -71,7 +72,10 @@ export default function RootLayout({
         <script src="https://checkout.razorpay.com/v1/checkout.js" async />
       </head>
       <body className={inter.className}>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <Navbar />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

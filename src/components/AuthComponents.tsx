@@ -1,22 +1,27 @@
 // src/components/AuthComponents.tsx
-'use client';
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, Mail, Chrome, LogOut, User, Settings, Crown } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+"use client";
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, Mail, LogOut, User, Settings, Crown } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Login/Signup Component
 export const AuthForm = () => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   const { signInWithMagicLink, signInWithGoogle } = useAuth();
 
-  const handleMagicLink = async (e?: React.MouseEvent | React.KeyboardEvent) => {
+  const handleMagicLink = async (
+    e?: React.MouseEvent | React.KeyboardEvent
+  ) => {
     e?.preventDefault();
     if (!email) return;
 
@@ -27,19 +32,22 @@ export const AuthForm = () => {
       const { error } = await signInWithMagicLink(email);
 
       if (error) {
-        setMessage({ type: 'error', text: error.message });
+        setMessage({ type: "error", text: error.message });
       } else {
         setMagicLinkSent(true);
         setMessage({
-          type: 'success',
-          text: 'Check your email for the magic link!'
+          type: "success",
+          text: "Check your email for the magic link!",
         });
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Something went wrong. Please try again.';
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Something went wrong. Please try again.";
       setMessage({
-        type: 'error',
-        text: errorMessage
+        type: "error",
+        text: errorMessage,
       });
     } finally {
       setLoading(false);
@@ -54,15 +62,18 @@ export const AuthForm = () => {
       const { error } = await signInWithGoogle();
 
       if (error) {
-        setMessage({ type: 'error', text: error.message });
+        setMessage({ type: "error", text: error.message });
         setLoading(false);
       }
       // Don't set loading to false here - user will be redirected
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Something went wrong. Please try again.';
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Something went wrong. Please try again.";
       setMessage({
-        type: 'error',
-        text: errorMessage
+        type: "error",
+        text: errorMessage,
       });
       setLoading(false);
     }
@@ -104,7 +115,10 @@ export const AuthForm = () => {
         {/* Magic Link Form */}
         <div className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Email Address
             </label>
             <input
@@ -115,7 +129,7 @@ export const AuthForm = () => {
               placeholder="Enter your email"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                if (e.key === 'Enter') {
+                if (e.key === "Enter") {
                   handleMagicLink(e);
                 }
               }}
@@ -147,7 +161,9 @@ export const AuthForm = () => {
             <span className="w-full border-t" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-gray-500">Or continue with</span>
+            <span className="bg-white px-2 text-gray-500">
+              Or continue with
+            </span>
           </div>
         </div>
 
@@ -158,24 +174,54 @@ export const AuthForm = () => {
           className="w-full"
           disabled={loading}
         >
-          <Chrome className="mr-2 h-4 w-4" />
+          {/* <Google className="mr-2 h-4 w-4" />
+           */}
+            <svg
+            className="mr-2 h-4 w-4"
+            viewBox="-3 0 262 262"
+            xmlns="http://www.w3.org/2000/svg"
+            preserveAspectRatio="xMidYMid"
+            >
+            <g>
+              <path
+              d="M255.878 133.451c0-10.734-.871-18.567-2.756-26.69H130.55v48.448h71.947c-1.45 12.04-9.283 30.172-26.69 42.356l-.244 1.622 38.755 30.023 2.685.268c24.659-22.774 38.875-56.282 38.875-96.027"
+              fill="#4285F4"
+              />
+              <path
+              d="M130.55 261.1c35.248 0 64.839-11.605 86.453-31.622l-41.196-31.913c-11.024 7.688-25.82 13.055-45.257 13.055-34.523 0-63.824-22.773-74.269-54.25l-1.531.13-40.298 31.187-.527 1.465C35.393 231.798 79.49 261.1 130.55 261.1"
+              fill="#34A853"
+              />
+              <path
+              d="M56.281 156.37c-2.756-8.123-4.351-16.827-4.351-25.82 0-8.994 1.595-17.697 4.206-25.82l-.073-1.73L15.26 71.312l-1.335.635C5.077 89.644 0 109.517 0 130.55s5.077 40.905 13.925 58.602l42.356-32.782"
+              fill="#FBBC05"
+              />
+              <path
+              d="M130.55 50.479c24.514 0 41.05 10.589 50.479 19.438l36.844-35.974C195.245 12.91 165.798 0 130.55 0 79.49 0 35.393 29.301 13.925 71.947l42.211 32.783c10.59-31.477 39.891-54.251 74.414-54.251"
+              fill="#EB4335"
+              />
+            </g>
+            </svg>
           Google
         </Button>
 
         {/* Message */}
         {message && (
-          <div className={`p-3 rounded-lg text-sm ${
-            message.type === 'success'
-              ? 'bg-green-50 text-green-800 border border-green-200'
-              : 'bg-red-50 text-red-800 border border-red-200'
-          }`}>
+          <div
+            className={`p-3 rounded-lg text-sm ${
+              message.type === "success"
+                ? "bg-green-50 text-green-800 border border-green-200"
+                : "bg-red-50 text-red-800 border border-red-200"
+            }`}
+          >
             {message.text}
           </div>
         )}
 
         {/* Info */}
         <div className="text-xs text-gray-500 text-center">
-          <p>By signing in, you agree to our Terms of Service and Privacy Policy.</p>
+          <p>
+            By signing in, you agree to our Terms of Service and Privacy Policy.
+          </p>
         </div>
       </CardContent>
     </Card>
@@ -222,7 +268,7 @@ export const UserMenu = () => {
           <User className="h-4 w-4" />
         )}
         <span className="text-sm">
-          {user.profile?.full_name || user.email?.split('@')[0] || 'User'}
+          {user.profile?.full_name || user.email?.split("@")[0] || "User"}
         </span>
       </Button>
 
@@ -243,7 +289,7 @@ export const UserMenu = () => {
               )}
               <div>
                 <p className="font-medium text-sm">
-                  {user.profile?.full_name || 'User'}
+                  {user.profile?.full_name || "User"}
                 </p>
                 <p className="text-xs text-gray-500">{user.email}</p>
               </div>
@@ -255,7 +301,7 @@ export const UserMenu = () => {
               variant="ghost"
               className="w-full justify-start text-sm"
               onClick={() => {
-                window.location.href = '/profile';
+                window.location.href = "/profile";
                 setShowDropdown(false);
               }}
             >
@@ -267,7 +313,7 @@ export const UserMenu = () => {
               variant="ghost"
               className="w-full justify-start text-sm"
               onClick={() => {
-                window.location.href = '/subscription';
+                window.location.href = "/subscription";
                 setShowDropdown(false);
               }}
             >
@@ -295,7 +341,7 @@ export const UserMenu = () => {
 // Auth Guard Component
 export const AuthGuard = ({
   children,
-  fallback
+  fallback,
 }: {
   children: React.ReactNode;
   fallback?: React.ReactNode;
@@ -314,10 +360,12 @@ export const AuthGuard = ({
   }
 
   if (!user) {
-    return fallback || (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <AuthForm />
-      </div>
+    return (
+      fallback || (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <AuthForm />
+        </div>
+      )
     );
   }
 
@@ -339,12 +387,15 @@ export const LoginPage = () => {
 export const ProfileSettings = () => {
   const { user, updateProfile } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   const [formData, setFormData] = useState({
-    full_name: user?.profile?.full_name || '',
-    organization: user?.profile?.organization || '',
-    phone: user?.profile?.phone || ''
+    full_name: user?.profile?.full_name || "",
+    organization: user?.profile?.organization || "",
+    phone: user?.profile?.phone || "",
   });
 
   const handleSubmit = async () => {
@@ -355,13 +406,14 @@ export const ProfileSettings = () => {
       const { error } = await updateProfile(formData);
 
       if (error) {
-        setMessage({ type: 'error', text: error.message });
+        setMessage({ type: "error", text: error.message });
       } else {
-        setMessage({ type: 'success', text: 'Profile updated successfully!' });
+        setMessage({ type: "success", text: "Profile updated successfully!" });
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to update profile';
-      setMessage({ type: 'error', text: errorMessage });
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update profile";
+      setMessage({ type: "error", text: errorMessage });
     } finally {
       setLoading(false);
     }
@@ -385,7 +437,9 @@ export const ProfileSettings = () => {
             <div className="flex items-center gap-2">
               <Mail className="h-4 w-4 text-gray-400" />
               <span className="text-gray-600">{user?.email}</span>
-              <Badge variant="outline" className="text-xs">Verified</Badge>
+              <Badge variant="outline" className="text-xs">
+                Verified
+              </Badge>
             </div>
           </div>
 
@@ -396,7 +450,9 @@ export const ProfileSettings = () => {
             <input
               type="text"
               value={formData.full_name}
-              onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, full_name: e.target.value }))
+              }
               placeholder="Enter your full name"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
@@ -409,7 +465,12 @@ export const ProfileSettings = () => {
             <input
               type="text"
               value={formData.organization}
-              onChange={(e) => setFormData(prev => ({ ...prev, organization: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  organization: e.target.value,
+                }))
+              }
               placeholder="Company or organization name"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
@@ -422,7 +483,9 @@ export const ProfileSettings = () => {
             <input
               type="tel"
               value={formData.phone}
-              onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, phone: e.target.value }))
+              }
               placeholder="+91 12345 67890"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
@@ -431,11 +494,13 @@ export const ProfileSettings = () => {
 
         {/* Message */}
         {message && (
-          <div className={`p-3 rounded-lg text-sm ${
-            message.type === 'success'
-              ? 'bg-green-50 text-green-800 border border-green-200'
-              : 'bg-red-50 text-red-800 border border-red-200'
-          }`}>
+          <div
+            className={`p-3 rounded-lg text-sm ${
+              message.type === "success"
+                ? "bg-green-50 text-green-800 border border-green-200"
+                : "bg-red-50 text-red-800 border border-red-200"
+            }`}
+          >
             {message.text}
           </div>
         )}
@@ -462,7 +527,7 @@ export const ProfileSettings = () => {
 
           <Button
             variant="outline"
-            onClick={() => window.location.href = '/dashboard'}
+            onClick={() => (window.location.href = "/dashboard")}
           >
             Back to Dashboard
           </Button>

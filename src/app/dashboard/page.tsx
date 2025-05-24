@@ -9,7 +9,7 @@ export default function DashboardPage() {
     <AuthGuard>
       {/* <TenderDashboard /> */}
       <div className="min-h-screen bg-gray-50 py-8">
-        <h1 className="text-2xl font-bold text-center mb-8">Welcome to the Dashboard</h1>
+        <h1 className="text-2xl font-bold text-center mb-8 mt-24">Welcome to the Dashboard</h1>
       </div>
     </AuthGuard>
   );
