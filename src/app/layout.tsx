@@ -44,6 +44,7 @@ import { Inter } from "next/font/google";
 // import { initDatabase } from "@/lib/db-schema";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Navbar from "@/components/NavBar";
+import { initializeApp } from "@/lib/app-init";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -59,6 +60,11 @@ export const metadata: Metadata = {
 //     .then(() => console.log("Database initialized"))
 //     .catch((err) => console.error("Failed to initialize database:", err));
 // }
+
+// Initialize app on server startup
+if (typeof window === "undefined") {
+  initializeApp().catch(console.error);
+}
 
 export default function RootLayout({
   children,
