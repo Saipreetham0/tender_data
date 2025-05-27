@@ -6,12 +6,28 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Star, Loader2, X, CreditCard,
-  CheckCircle, Crown, Zap, Building2,
-  Mail, Filter, Code, Clock, HeadphonesIcon,
-  TrendingUp, Users
+  Star,
+  Loader2,
+  X,
+  CreditCard,
+  CheckCircle,
+  Crown,
+  Zap,
+  Building2,
+  Mail,
+  Filter,
+  Code,
+  Clock,
+  HeadphonesIcon,
+  TrendingUp,
+  Users,
 } from "lucide-react";
-import { formatPrice, calculateYearlySavings, getFeatureIcon, getFeatureIconColor } from "@/utils/subscription";
+import {
+  formatPrice,
+  calculateYearlySavings,
+  getFeatureIcon,
+  getFeatureIconColor,
+} from "@/utils/subscription";
 
 interface PlanCardProps {
   plan: SubscriptionPlan;
@@ -30,31 +46,44 @@ const PlanCard: React.FC<PlanCardProps> = ({
   processingPlanId,
   onSubscribe,
   user,
-  router
+  router,
 }) => {
-  const price = billingCycle === "yearly" ? plan.price_yearly : plan.price_monthly;
+  const price =
+    billingCycle === "yearly" ? plan.price_yearly : plan.price_monthly;
   const isFree = plan.name === "Free";
   const isEnterprise = plan.name === "Enterprise";
 
   // Map icon names to actual components
   const iconMap: Record<string, React.ReactNode> = {
-    "Users": <Users className="h-6 w-6" />,
-    "Mail": <Mail className="h-6 w-6" />,
-    "Building2": <Building2 className="h-6 w-6" />,
-    "Zap": <Zap className="h-6 w-6" />,
-    "Crown": <Crown className="h-6 w-6" />,
-    "Star": <Star className="h-6 w-6" />
+    Users: <Users className="h-6 w-6" />,
+    Mail: <Mail className="h-6 w-6" />,
+    Building2: <Building2 className="h-6 w-6" />,
+    Zap: <Zap className="h-6 w-6" />,
+    Crown: <Crown className="h-6 w-6" />,
+    Star: <Star className="h-6 w-6" />,
   };
 
   const featureIconMap: Record<string, React.ReactNode> = {
-    "Building2": <Building2 className={`h-4 w-4 ${getFeatureIconColor("Building2")}`} />,
-    "Mail": <Mail className={`h-4 w-4 ${getFeatureIconColor("Mail")}`} />,
-    "Filter": <Filter className={`h-4 w-4 ${getFeatureIconColor("Filter")}`} />,
-    "Code": <Code className={`h-4 w-4 ${getFeatureIconColor("Code")}`} />,
-    "HeadphonesIcon": <HeadphonesIcon className={`h-4 w-4 ${getFeatureIconColor("HeadphonesIcon")}`} />,
-    "Clock": <Clock className={`h-4 w-4 ${getFeatureIconColor("Clock")}`} />,
-    "TrendingUp": <TrendingUp className={`h-4 w-4 ${getFeatureIconColor("TrendingUp")}`} />,
-    "CheckCircle": <CheckCircle className={`h-4 w-4 ${getFeatureIconColor("CheckCircle")}`} />
+    Building2: (
+      <Building2 className={`h-4 w-4 ${getFeatureIconColor("Building2")}`} />
+    ),
+    Mail: <Mail className={`h-4 w-4 ${getFeatureIconColor("Mail")}`} />,
+    Filter: <Filter className={`h-4 w-4 ${getFeatureIconColor("Filter")}`} />,
+    Code: <Code className={`h-4 w-4 ${getFeatureIconColor("Code")}`} />,
+    HeadphonesIcon: (
+      <HeadphonesIcon
+        className={`h-4 w-4 ${getFeatureIconColor("HeadphonesIcon")}`}
+      />
+    ),
+    Clock: <Clock className={`h-4 w-4 ${getFeatureIconColor("Clock")}`} />,
+    TrendingUp: (
+      <TrendingUp className={`h-4 w-4 ${getFeatureIconColor("TrendingUp")}`} />
+    ),
+    CheckCircle: (
+      <CheckCircle
+        className={`h-4 w-4 ${getFeatureIconColor("CheckCircle")}`}
+      />
+    ),
   };
 
   const getPlanIconComponent = (name: string) => {
@@ -101,19 +130,24 @@ const PlanCard: React.FC<PlanCardProps> = ({
             </div>
           ) : (
             <>
-              <span className="text-3xl font-bold">
-                {formatPrice(price)}
-              </span>
+              <span className="text-3xl font-bold">{formatPrice(price)}</span>
               {!isFree && (
                 <span className="text-gray-500 text-sm">
                   /{billingCycle === "yearly" ? "year" : "month"}
                 </span>
               )}
-              {billingCycle === "yearly" && !isFree && plan.price_yearly > 0 && (
-                <p className="text-sm text-green-600 font-medium mt-1">
-                  Save {calculateYearlySavings(plan.price_monthly, plan.price_yearly)}%
-                </p>
-              )}
+              {billingCycle === "yearly" &&
+                !isFree &&
+                plan.price_yearly > 0 && (
+                  <p className="text-sm text-green-600 font-medium mt-1">
+                    Save{" "}
+                    {calculateYearlySavings(
+                      plan.price_monthly,
+                      plan.price_yearly
+                    )}
+                    %
+                  </p>
+                )}
             </>
           )}
         </div>
@@ -148,7 +182,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => user ? null : router.push("/login")}
+              onClick={() => (user ? null : router.push("/login"))}
             >
               {user ? "Current Plan" : "Start Free"}
             </Button>
@@ -156,7 +190,9 @@ const PlanCard: React.FC<PlanCardProps> = ({
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => window.location.href = "mailto:sales@rgukttenders.com"}
+              onClick={() =>
+                (window.location.href = "mailto:sales@rgukttenders.com")
+              }
             >
               Contact Sales
             </Button>

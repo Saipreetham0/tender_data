@@ -1,9 +1,15 @@
 // src/app/admin/cron/page.tsx
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCw, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+import {
+  Loader2,
+  RefreshCw,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface CronLog {
@@ -31,7 +37,7 @@ export default function CronStatusPage() {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [showDetails, setShowDetails] = useState<string | null>(null);
 
-  const fetchCronStatus = async () => {
+  const fetchCronStatus = useCallback(async () => {
     if (!apiKey) return;
 
     setRefreshing(true);
@@ -53,12 +59,14 @@ export default function CronStatusPage() {
         setError(data.error || "Unknown error occurred");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch cron status");
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch cron status"
+      );
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [apiKey]);
 
   const triggerCronJob = async () => {
     if (!apiKey) return;
@@ -75,22 +83,24 @@ export default function CronStatusPage() {
       const data = await response.json();
 
       if (data.success) {
-        alert("Cron job triggered successfully! Refresh the status in a moment to see results.");
+        alert(
+          "Cron job triggered successfully! Refresh the status in a moment to see results."
+        );
       } else {
         setError(data.error || data.message || "Unknown error occurred");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to trigger cron job");
+      setError(
+        err instanceof Error ? err.message : "Failed to trigger cron job"
+      );
     } finally {
       setRefreshing(false);
     }
   };
 
   useEffect(() => {
-    if (apiKey) {
-      fetchCronStatus();
-    }
-  }, [apiKey]);
+    fetchCronStatus();
+  }, [fetchCronStatus]);
 
   const formatDate = (dateString: string) => {
     try {
@@ -103,21 +113,21 @@ export default function CronStatusPage() {
 
   const getStatusColor = (status: string): string => {
     switch (status.toLowerCase()) {
-      case 'completed':
-      case 'success':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'started':
-      case 'running':
-      case 'in-progress':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'failed':
-      case 'error':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'warning':
-      case 'skipped':
-        return 'bg-amber-100 text-amber-800 border-amber-200';
+      case "completed":
+      case "success":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "started":
+      case "running":
+      case "in-progress":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "failed":
+      case "error":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "warning":
+      case "skipped":
+        return "bg-amber-100 text-amber-800 border-amber-200";
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
@@ -141,7 +151,11 @@ export default function CronStatusPage() {
               disabled={refreshing || !apiKey}
               className="ml-2"
             >
-              {refreshing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+              {refreshing ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
               Refresh
             </Button>
           </CardTitle>
@@ -150,7 +164,10 @@ export default function CronStatusPage() {
         <CardContent>
           {/* API Key Input */}
           <div className="mb-6">
-            <label htmlFor="apiKey" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="apiKey"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               API Key (Required)
             </label>
             <div className="flex gap-2">
@@ -167,7 +184,8 @@ export default function CronStatusPage() {
               </Button>
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              This is the same key that you have set as CRON_API_SECRET_KEY in your environment variables.
+              This is the same key that you have set as CRON_API_SECRET_KEY in
+              your environment variables.
             </p>
           </div>
 
@@ -197,12 +215,16 @@ export default function CronStatusPage() {
                       {status.isWorking ? (
                         <>
                           <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
-                          <span className="font-medium text-green-800">Working Correctly</span>
+                          <span className="font-medium text-green-800">
+                            Working Correctly
+                          </span>
                         </>
                       ) : (
                         <>
                           <AlertTriangle className="h-5 w-5 text-amber-600 mr-2" />
-                          <span className="font-medium text-amber-800">Not Working</span>
+                          <span className="font-medium text-amber-800">
+                            Not Working
+                          </span>
                         </>
                       )}
                     </div>
@@ -211,14 +233,20 @@ export default function CronStatusPage() {
                   <div>
                     <div className="text-sm text-gray-500">Last Execution</div>
                     <div className="font-medium mt-1">
-                      {status.lastExecutionTime ? formatDate(status.lastExecutionTime) : "Never"}
+                      {status.lastExecutionTime
+                        ? formatDate(status.lastExecutionTime)
+                        : "Never"}
                     </div>
                   </div>
 
                   <div>
-                    <div className="text-sm text-gray-500">Next Scheduled Run</div>
+                    <div className="text-sm text-gray-500">
+                      Next Scheduled Run
+                    </div>
                     <div className="font-medium mt-1">
-                      {status.nextScheduledRun ? formatDate(status.nextScheduledRun) : "Unknown"}
+                      {status.nextScheduledRun
+                        ? formatDate(status.nextScheduledRun)
+                        : "Unknown"}
                     </div>
                   </div>
 
@@ -236,7 +264,9 @@ export default function CronStatusPage() {
                     disabled={refreshing || !apiKey}
                     className="bg-blue-600 hover:bg-blue-700"
                   >
-                    {refreshing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                    {refreshing ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : null}
                     Trigger Cron Job Manually
                   </Button>
                 </div>
@@ -244,15 +274,32 @@ export default function CronStatusPage() {
 
               {/* Recent Logs */}
               <div>
-                <h3 className="text-lg font-semibold mb-3">Recent Logs ({logs.length})</h3>
+                <h3 className="text-lg font-semibold mb-3">
+                  Recent Logs ({logs.length})
+                </h3>
                 {logs.length > 0 ? (
                   <div className="border rounded-lg overflow-hidden">
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Message</th>
+                          <th
+                            scope="col"
+                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                          >
+                            Time
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                          >
+                            Status
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                          >
+                            Message
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
@@ -297,15 +344,22 @@ export default function CronStatusPage() {
             </div>
           ) : (
             <div className="text-center py-8 border rounded-lg bg-gray-50">
-              <p className="text-gray-500">Enter your API key to view cron job status</p>
+              <p className="text-gray-500">
+                Enter your API key to view cron job status
+              </p>
             </div>
           )}
         </CardContent>
       </Card>
 
       <div className="mt-8 text-center text-gray-500 text-sm">
-        <p>Note: This page shows the status of your cron jobs and recent logs.</p>
-        <p className="mt-1">If the cron job is not working, make sure the Vercel cron configuration is correct.</p>
+        <p>
+          Note: This page shows the status of your cron jobs and recent logs.
+        </p>
+        <p className="mt-1">
+          If the cron job is not working, make sure the Vercel cron
+          configuration is correct.
+        </p>
       </div>
     </div>
   );

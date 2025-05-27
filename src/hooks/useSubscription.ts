@@ -1,6 +1,5 @@
-
 // src/hooks/useSubscription.ts
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 interface Subscription {
   plan?: {
@@ -34,7 +33,7 @@ export function useSubscription(email: string): SubscriptionHook {
       const data = await response.json();
       setSubscription(data.subscription);
     } catch (error) {
-      console.error('Error fetching subscription:', error);
+      console.error("Error fetching subscription:", error);
     } finally {
       setLoading(false);
     }
@@ -42,7 +41,7 @@ export function useSubscription(email: string): SubscriptionHook {
 
   useEffect(() => {
     fetchSubscription();
-  }, [email]);
+  }, [fetchSubscription]);
 
   const hasFeature = (feature: string): boolean => {
     if (!subscription) return false;
@@ -51,24 +50,26 @@ export function useSubscription(email: string): SubscriptionHook {
 
   const checkUsage = async (type: string) => {
     try {
-      const response = await fetch(`/api/subscription/usage?email=${email}&type=${type}`);
+      const response = await fetch(
+        `/api/subscription/usage?email=${email}&type=${type}`
+      );
       const data = await response.json();
       return data.usage;
     } catch (error) {
-      console.error('Error checking usage:', error);
+      console.error("Error checking usage:", error);
       return { allowed: false, currentUsage: 0 };
     }
   };
 
   const trackUsage = async (type: string) => {
     try {
-      await fetch('/api/subscription/usage', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, usageType: type })
+      await fetch("/api/subscription/usage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, usageType: type }),
       });
     } catch (error) {
-      console.error('Error tracking usage:', error);
+      console.error("Error tracking usage:", error);
     }
   };
 
@@ -83,8 +84,6 @@ export function useSubscription(email: string): SubscriptionHook {
     hasFeature,
     checkUsage,
     trackUsage,
-    refreshSubscription
+    refreshSubscription,
   };
 }
-
-

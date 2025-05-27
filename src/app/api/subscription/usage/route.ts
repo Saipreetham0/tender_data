@@ -1,7 +1,7 @@
 // src/app/api/subscription/usage/route.ts
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { RazorpaySubscriptionService } from '@/lib/razorpay-service';
+import { RazorpayPaymentService } from '@/lib/razorpay-payment';
 
 export async function GET(request: Request) {
   try {
@@ -19,23 +19,23 @@ export async function GET(request: Request) {
     const today = new Date().toISOString().split('T')[0];
 
     // Get current usage
-        interface Usage {
-          [key: string]: number;
-        }
+    interface Usage {
+      [key: string]: number;
+    }
 
-        const { data: usage } = await supabase
-          .from('user_usage')
-          .select(type)
-          .eq('user_email', email)
-          .eq('date', today)
-          .single();
+    const { data: usage } = await supabase
+      .from('user_usage')
+      .select(type)
+      .eq('user_email', email)
+      .eq('date', today)
+      .single();
 
-        const currentUsage = (usage && typeof usage === 'object' && !('error' in usage))
-          ? (usage as Usage)[type] || 0
-          : 0;
+    const currentUsage = (usage && typeof usage === 'object' && !('error' in usage))
+      ? (usage as Usage)[type] || 0
+      : 0;
 
     // Check if user has active subscription
-    const subscription = await RazorpaySubscriptionService.getCurrentSubscription(email);
+    const subscription = await RazorpayPaymentService.getCurrentSubscription(email);
 
     let limit = null;
     let allowed = true;

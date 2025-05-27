@@ -44,7 +44,7 @@ import { Inter } from "next/font/google";
 // import { initDatabase } from "@/lib/db-schema";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Navbar from "@/components/NavBar";
-import { initializeApp } from "@/lib/app-init";
+// import { initializeApp } from "@/lib/app-init";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -62,9 +62,9 @@ export const metadata: Metadata = {
 // }
 
 // Initialize app on server startup
-if (typeof window === "undefined") {
-  initializeApp().catch(console.error);
-}
+// if (typeof window === "undefined") {
+//   initializeApp().catch(console.error);
+// }
 
 export default function RootLayout({
   children,

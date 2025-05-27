@@ -1,11 +1,11 @@
 // src/components/Dashboard/SubscriptionIntegration.tsx
-import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Lock, Crown, Filter, Building2, Mail, Zap } from 'lucide-react';
-import { useRazorpaySubscription } from '@/hooks/useRazorpaySubscription';
-import { useState as reactUseState } from 'react';
+import React from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Lock, Crown, Filter, Building2, Mail, Zap } from "lucide-react";
+// import { useRazorpaySubscription } from "@/hooks/useRazorpaySubscription";
+import { useState as reactUseState } from "react";
 
 interface FeatureGateProps {
   feature: string;
@@ -13,8 +13,12 @@ interface FeatureGateProps {
   fallback?: React.ReactNode;
 }
 
-export const FeatureGate: React.FC<FeatureGateProps> = ({ feature, children, fallback }) => {
-  const { canAccess, currentSubscription } = useRazorpaySubscription();
+export const FeatureGate: React.FC<FeatureGateProps> = ({
+  feature,
+  children,
+  fallback,
+}) => {
+  const { canAccess } = useRazorpaySubscription();
 
   if (canAccess(feature)) {
     return <>{children}</>;
@@ -33,7 +37,7 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({ feature, children, fal
           Upgrade to {getRequiredPlan(feature)} to access this feature
         </p>
         <Button
-          onClick={() => window.location.href = '/subscription'}
+          onClick={() => (window.location.href = "/subscription")}
           className="bg-amber-600 hover:bg-amber-700"
         >
           <Crown className="h-4 w-4 mr-2" />
@@ -46,44 +50,46 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({ feature, children, fal
 
 function getRequiredPlan(feature: string): string {
   switch (feature) {
-    case 'all_colleges':
-      return 'All Colleges plan';
-    case 'keyword_filter':
-      return 'All Colleges plan';
-    case 'advanced_filters':
-      return 'Pro plan';
-    case 'api_access':
-      return 'Pro plan';
+    case "all_colleges":
+      return "All Colleges plan";
+    case "keyword_filter":
+      return "All Colleges plan";
+    case "advanced_filters":
+      return "Pro plan";
+    case "api_access":
+      return "Pro plan";
     default:
-      return 'a premium plan';
+      return "a premium plan";
   }
 }
 
 // Updated Dashboard component with subscription gates
 export const EnhancedTenderDashboard: React.FC = () => {
   const { currentSubscription, canAccess } = useRazorpaySubscription();
-  const [selectedColleges, setSelectedColleges] = useState<string[]>(['all']);
-  const [keywordFilter, setKeywordFilter] = useState('');
-  const [advancedFilters, setAdvancedFilters] = useState({
-    minAmount: '',
-    maxAmount: '',
-    category: '',
-    department: ''
+  const [selectedColleges, setSelectedColleges] = reactUseState<string[]>([
+    "all",
+  ]);
+  const [keywordFilter, setKeywordFilter] = reactUseState("");
+  const [advancedFilters, setAdvancedFilters] = reactUseState({
+    minAmount: "",
+    maxAmount: "",
+    category: "",
+    department: "",
   });
 
   // Determine which colleges user can access
   const getAccessibleColleges = () => {
     if (!currentSubscription) {
       // Free tier - only one college
-      return ['basar'];
+      return ["basar"];
     }
 
-    if (canAccess('all_colleges')) {
-      return ['all', 'basar', 'rkvalley', 'ongole', 'rgukt', 'sklm'];
+    if (canAccess("all_colleges")) {
+      return ["all", "basar", "rkvalley", "ongole", "rgukt", "sklm"];
     }
 
     // Basic plan - one college
-    return ['basar'];
+    return ["basar"];
   };
 
   const accessibleColleges = getAccessibleColleges();
@@ -96,7 +102,7 @@ export const EnhancedTenderDashboard: React.FC = () => {
           <div className="flex items-center space-x-3">
             <Crown className="h-5 w-5 text-blue-600" />
             <span className="font-medium">
-              Current Plan: {currentSubscription?.plan.name || 'Free'}
+              Current Plan: {currentSubscription?.plan.name || "Free"}
             </span>
             {currentSubscription && (
               <Badge className="bg-green-100 text-green-800">
@@ -107,7 +113,7 @@ export const EnhancedTenderDashboard: React.FC = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => window.location.href = '/subscription'}
+            onClick={() => (window.location.href = "/subscription")}
           >
             Manage Subscription
           </Button>
@@ -122,25 +128,31 @@ export const EnhancedTenderDashboard: React.FC = () => {
             Select Colleges
           </h3>
 
-          {canAccess('all_colleges') ? (
+          {canAccess("all_colleges") ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-              {['all', 'basar', 'rkvalley', 'ongole', 'rgukt', 'sklm'].map(college => (
-                <label key={college} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedColleges.includes(college)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedColleges([...selectedColleges, college]);
-                      } else {
-                        setSelectedColleges(selectedColleges.filter(c => c !== college));
-                      }
-                    }}
-                    className="rounded"
-                  />
-                  <span className="text-sm capitalize">{college === 'all' ? 'All Colleges' : college}</span>
-                </label>
-              ))}
+              {["all", "basar", "rkvalley", "ongole", "rgukt", "sklm"].map(
+                (college) => (
+                  <label key={college} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedColleges.includes(college)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedColleges([...selectedColleges, college]);
+                        } else {
+                          setSelectedColleges(
+                            selectedColleges.filter((c) => c !== college)
+                          );
+                        }
+                      }}
+                      className="rounded"
+                    />
+                    <span className="text-sm capitalize">
+                      {college === "all" ? "All Colleges" : college}
+                    </span>
+                  </label>
+                )
+              )}
             </div>
           ) : (
             <div className="space-y-3">
@@ -149,9 +161,9 @@ export const EnhancedTenderDashboard: React.FC = () => {
                 onChange={(e) => setSelectedColleges([e.target.value])}
                 className="w-full p-2 border rounded-lg"
               >
-                {accessibleColleges.map(college => (
+                {accessibleColleges.map((college) => (
                   <option key={college} value={college}>
-                    {college === 'all' ? 'All Colleges' : college.toUpperCase()}
+                    {college === "all" ? "All Colleges" : college.toUpperCase()}
                   </option>
                 ))}
               </select>
@@ -175,7 +187,7 @@ export const EnhancedTenderDashboard: React.FC = () => {
           <div className="mb-4">
             <label className="block text-sm font-medium mb-2">
               Keyword Filter
-              {!canAccess('keyword_filter') && (
+              {!canAccess("keyword_filter") && (
                 <Badge className="ml-2 bg-amber-100 text-amber-800">
                   All Colleges Plan
                 </Badge>
@@ -209,7 +221,7 @@ export const EnhancedTenderDashboard: React.FC = () => {
           <div className="space-y-3">
             <label className="block text-sm font-medium">
               Advanced Filters
-              {!canAccess('advanced_filters') && (
+              {!canAccess("advanced_filters") && (
                 <Badge className="ml-2 bg-amber-100 text-amber-800">
                   Pro Plan
                 </Badge>
@@ -230,19 +242,34 @@ export const EnhancedTenderDashboard: React.FC = () => {
                   type="number"
                   placeholder="Min Amount"
                   value={advancedFilters.minAmount}
-                  onChange={(e) => setAdvancedFilters({...advancedFilters, minAmount: e.target.value})}
+                  onChange={(e) =>
+                    setAdvancedFilters({
+                      ...advancedFilters,
+                      minAmount: e.target.value,
+                    })
+                  }
                   className="p-2 border rounded-lg"
                 />
                 <input
                   type="number"
                   placeholder="Max Amount"
                   value={advancedFilters.maxAmount}
-                  onChange={(e) => setAdvancedFilters({...advancedFilters, maxAmount: e.target.value})}
+                  onChange={(e) =>
+                    setAdvancedFilters({
+                      ...advancedFilters,
+                      maxAmount: e.target.value,
+                    })
+                  }
                   className="p-2 border rounded-lg"
                 />
                 <select
                   value={advancedFilters.category}
-                  onChange={(e) => setAdvancedFilters({...advancedFilters, category: e.target.value})}
+                  onChange={(e) =>
+                    setAdvancedFilters({
+                      ...advancedFilters,
+                      category: e.target.value,
+                    })
+                  }
                   className="p-2 border rounded-lg"
                 >
                   <option value="">All Categories</option>
@@ -253,7 +280,12 @@ export const EnhancedTenderDashboard: React.FC = () => {
                 </select>
                 <select
                   value={advancedFilters.department}
-                  onChange={(e) => setAdvancedFilters({...advancedFilters, department: e.target.value})}
+                  onChange={(e) =>
+                    setAdvancedFilters({
+                      ...advancedFilters,
+                      department: e.target.value,
+                    })
+                  }
                   className="p-2 border rounded-lg"
                 >
                   <option value="">All Departments</option>
@@ -277,7 +309,7 @@ export const EnhancedTenderDashboard: React.FC = () => {
           </h3>
 
           <div className="space-y-3">
-            {currentSubscription && canAccess('realtime_alerts') ? (
+            {currentSubscription && canAccess("realtime_alerts") ? (
               <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
                 <div className="flex items-center space-x-3">
                   <Zap className="h-5 w-5 text-green-600" />
@@ -288,9 +320,7 @@ export const EnhancedTenderDashboard: React.FC = () => {
                     </p>
                   </div>
                 </div>
-                <Badge className="bg-green-100 text-green-800">
-                  Active
-                </Badge>
+                <Badge className="bg-green-100 text-green-800">Active</Badge>
               </div>
             ) : (
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -306,7 +336,7 @@ export const EnhancedTenderDashboard: React.FC = () => {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => window.location.href = '/subscription'}
+                  onClick={() => (window.location.href = "/subscription")}
                 >
                   Upgrade
                 </Button>
@@ -321,5 +351,3 @@ export const EnhancedTenderDashboard: React.FC = () => {
     </div>
   );
 };
-// Export the useState hook from React
-const useState = reactUseState;

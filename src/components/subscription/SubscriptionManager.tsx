@@ -1,3 +1,4 @@
+// src/components/subscription/SubscriptionManager.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -13,48 +14,29 @@ import PlansTab from "./PlansTab";
 import CurrentSubscriptionTab from "./CurrentSubscriptionTab";
 import FAQTab from "./FAQTab";
 import { useRouter } from "next/navigation";
-import { useContext } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
-interface AuthUser {
-  id: string;
-  email: string;
-  profile?: {
-    full_name?: string;
-    phone?: string;
-  };
+declare global {
+  interface Window {
+    Razorpay: new (options: RazorpayOptions) => RazorpayInstance;
+  }
 }
 
-interface AuthContextType {
-  user: AuthUser | null;
-}
+type RazorpayOptions = Record<string, unknown>;
+type RazorpayInstance = {
+  open: () => void;
+  // Add other methods if needed
+};
 
-// This is a mock of the actual useAuth hook that would be implemented
-// const useAuth = (): AuthContextType => {
-//   // In a real implementation, this would come from your auth context
-//   return {
-//     user: {
-//       id: "user_123",
-//       email: "user@example.com",
-//       profile: {
-//         full_name: "Demo User",
-//         phone: "9876543210",
-//       },
-//     },
-//   };
-// };
-
-// const { user, subscription, loading } = useAuth();
-
-
-// const useAuth = () => {
-//   const context = useContext(AuthContext);
-//   if (!context) throw new Error("useAuth must be used within an AuthProvider");
-//   return context;
-// };
+type RazorpayPaymentResponse = {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+  // Add other fields if needed
+};
 
 const SubscriptionManager: React.FC = () => {
-  const { user, subscription } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
 
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
@@ -76,7 +58,7 @@ const SubscriptionManager: React.FC = () => {
     } else {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, fetchData]);
 
   const fetchData = async () => {
     try {
@@ -132,6 +114,7 @@ const SubscriptionManager: React.FC = () => {
     setError(null);
 
     try {
+      // Create payment order
       const response = await fetch("/api/subscription/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -140,49 +123,90 @@ const SubscriptionManager: React.FC = () => {
           subscriptionType: billingCycle,
           userId: user.id,
           userEmail: user.email,
+          collegePreferences: ["all"],
         }),
       });
 
       const data = await response.json();
 
       if (!data.success) {
-        throw new Error(data.error || "Failed to create subscription");
+        throw new Error(data.error || "Failed to create subscription order");
       }
 
-      // Redirect to Razorpay checkout
-      if (data.shortUrl) {
-        window.location.href = data.shortUrl;
-      } else {
-        // Fallback to embedded checkout
-        const options = {
-          key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-          subscription_id: data.subscriptionId,
-          name: "RGUKT Tenders Portal",
-          description: `${data.plan.name} Subscription`,
-          image: "/logo.png",
-          handler: async function (response: any) {
-            setSuccess("Subscription created successfully!");
-            await fetchData();
-          },
-          prefill: {
-            name: user.profile?.full_name || "",
-            email: user.email,
-            contact: user.profile?.phone || "",
-          },
-          theme: {
-            color: "#3b82f6",
-          },
-          modal: {
-            ondismiss: function () {
-              setProcessingPlanId(null);
-            },
-          },
-        };
-
-        // @ts-expect-error - Razorpay is loaded via script
-        const razorpay = new window.Razorpay(options);
-        razorpay.open();
+      // Check if Razorpay is loaded
+      if (!window.Razorpay) {
+        throw new Error(
+          "Razorpay not loaded. Please refresh the page and try again."
+        );
       }
+
+      // Configure Razorpay options
+      const options = {
+        key: data.razorpayKeyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        order_id: data.orderId,
+        amount: data.amount,
+        currency: data.currency,
+        name: "RGUKT Tenders Portal",
+        description: `${data.plan.name} Subscription`,
+        image: "/logo.png",
+        handler: async function (response: RazorpayPaymentResponse) {
+          try {
+            // Verify payment
+            const verifyResponse = await fetch("/api/payment/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                planId,
+                subscriptionType: billingCycle,
+                userEmail: user.email,
+                userId: user.id,
+                collegePreferences: ["all"],
+              }),
+            });
+
+            const verifyData = await verifyResponse.json();
+
+            if (verifyData.success) {
+              setSuccess(
+                "Payment successful! Your subscription has been activated."
+              );
+              await fetchData();
+              setActiveTab("current");
+            } else {
+              throw new Error(
+                verifyData.error || "Payment verification failed"
+              );
+            }
+          } catch (verifyError) {
+            console.error("Payment verification error:", verifyError);
+            setError(
+              verifyError instanceof Error
+                ? verifyError.message
+                : "Payment verification failed. Please contact support."
+            );
+          }
+        },
+        prefill: {
+          name: user.profile?.full_name || "",
+          email: user.email,
+          contact: user.profile?.phone || "",
+        },
+        theme: {
+          color: "#3b82f6",
+        },
+        modal: {
+          ondismiss: function () {
+            setProcessingPlanId(null);
+          },
+        },
+      };
+
+      // Open Razorpay checkout
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
     } catch (error) {
       console.error("Error creating subscription:", error);
       setError(
@@ -231,60 +255,16 @@ const SubscriptionManager: React.FC = () => {
     }
   };
 
+  // Note: Pause and Resume are not needed for one-time payments
+  // These subscriptions expire naturally at the end of the period
   const handlePauseSubscription = async () => {
-    if (!currentSubscription) return;
-
-    try {
-      const response = await fetch("/api/subscription/pause", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          subscriptionId: currentSubscription.id,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setSuccess("Subscription paused successfully");
-        await fetchData();
-      } else {
-        throw new Error(data.error || "Failed to pause subscription");
-      }
-    } catch (error) {
-      console.error("Error pausing subscription:", error);
-      setError(
-        error instanceof Error ? error.message : "Failed to pause subscription"
-      );
-    }
+    setError(
+      "Pause feature is not available for this subscription type. You can cancel if needed."
+    );
   };
 
   const handleResumeSubscription = async () => {
-    if (!currentSubscription) return;
-
-    try {
-      const response = await fetch("/api/subscription/resume", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          subscriptionId: currentSubscription.id,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setSuccess("Subscription resumed successfully");
-        await fetchData();
-      } else {
-        throw new Error(data.error || "Failed to resume subscription");
-      }
-    } catch (error) {
-      console.error("Error resuming subscription:", error);
-      setError(
-        error instanceof Error ? error.message : "Failed to resume subscription"
-      );
-    }
+    setError("Resume feature is not available for this subscription type.");
   };
 
   if (loading) {

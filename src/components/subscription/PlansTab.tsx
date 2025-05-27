@@ -2,7 +2,6 @@
 
 import React from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, RefreshCw, Zap, Award, CheckCircle } from "lucide-react";
 import { SubscriptionPlan, UserSubscription } from "@/types/subscription";
@@ -33,11 +32,19 @@ const PlansTab: React.FC<PlansTabProps> = ({
     <div className="space-y-8">
       {/* Billing Toggle */}
       <div className="flex justify-center items-center space-x-4">
-        <span className={billingCycle === "monthly" ? "font-semibold text-gray-900" : "text-gray-500"}>
+        <span
+          className={
+            billingCycle === "monthly"
+              ? "font-semibold text-gray-900"
+              : "text-gray-500"
+          }
+        >
           Monthly
         </span>
         <button
-          onClick={() => setBillingCycle(billingCycle === "monthly" ? "yearly" : "monthly")}
+          onClick={() =>
+            setBillingCycle(billingCycle === "monthly" ? "yearly" : "monthly")
+          }
           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
             billingCycle === "yearly" ? "bg-blue-600" : "bg-gray-200"
           }`}
@@ -49,7 +56,13 @@ const PlansTab: React.FC<PlansTabProps> = ({
             }`}
           />
         </button>
-        <span className={billingCycle === "yearly" ? "font-semibold text-gray-900" : "text-gray-500"}>
+        <span
+          className={
+            billingCycle === "yearly"
+              ? "font-semibold text-gray-900"
+              : "text-gray-500"
+          }
+        >
           Yearly
         </span>
         {billingCycle === "yearly" && (
@@ -109,8 +122,11 @@ const PlansTab: React.FC<PlansTabProps> = ({
               <thead>
                 <tr className="border-b">
                   <th className="text-left py-3 px-4">Feature</th>
-                  {plans.map(plan => (
-                    <th key={plan.id} className="text-center py-3 px-4 min-w-[120px]">
+                  {plans.map((plan) => (
+                    <th
+                      key={plan.id}
+                      className="text-center py-3 px-4 min-w-[120px]"
+                    >
                       {plan.name}
                     </th>
                   ))}
@@ -119,15 +135,17 @@ const PlansTab: React.FC<PlansTabProps> = ({
               <tbody>
                 <tr className="border-b">
                   <td className="py-3 px-4 font-medium">Colleges Access</td>
-                  {plans.map(plan => (
+                  {plans.map((plan) => (
                     <td key={plan.id} className="text-center py-3 px-4">
-                      {plan.colleges_access === 5 ? "All 5" : `${plan.colleges_access} college`}
+                      {plan.colleges_access === 5
+                        ? "All 5"
+                        : `${plan.colleges_access} college`}
                     </td>
                   ))}
                 </tr>
                 <tr className="border-b">
                   <td className="py-3 px-4 font-medium">Email Alerts</td>
-                  {plans.map(plan => (
+                  {plans.map((plan) => (
                     <td key={plan.id} className="text-center py-3 px-4">
                       {plan.alert_type === "realtime" ? "Real-time" : "Weekly"}
                     </td>
@@ -135,41 +153,59 @@ const PlansTab: React.FC<PlansTabProps> = ({
                 </tr>
                 <tr className="border-b">
                   <td className="py-3 px-4 font-medium">Alert Delay</td>
-                  {plans.map(plan => (
+                  {plans.map((plan) => (
                     <td key={plan.id} className="text-center py-3 px-4">
-                      {plan.alert_delay_days > 0 ? `${plan.alert_delay_days} days` : "Instant"}
+                      {plan.alert_delay_days > 0
+                        ? `${plan.alert_delay_days} days`
+                        : "Instant"}
                     </td>
                   ))}
                 </tr>
                 <tr className="border-b">
                   <td className="py-3 px-4 font-medium">Keyword Filter</td>
-                  {plans.map(plan => (
+                  {plans.map((plan) => (
                     <td key={plan.id} className="text-center py-3 px-4">
-                      {plan.has_keyword_filter ? <CheckCircle className="h-4 w-4 text-green-500 mx-auto" /> : <span className="text-red-500">✕</span>}
+                      {plan.has_keyword_filter ? (
+                        <CheckCircle className="h-4 w-4 text-green-500 mx-auto" />
+                      ) : (
+                        <span className="text-red-500">✕</span>
+                      )}
                     </td>
                   ))}
                 </tr>
                 <tr className="border-b">
                   <td className="py-3 px-4 font-medium">Advanced Filters</td>
-                  {plans.map(plan => (
+                  {plans.map((plan) => (
                     <td key={plan.id} className="text-center py-3 px-4">
-                      {plan.has_advanced_filters ? <CheckCircle className="h-4 w-4 text-green-500 mx-auto" /> : <span className="text-red-500">✕</span>}
+                      {plan.has_advanced_filters ? (
+                        <CheckCircle className="h-4 w-4 text-green-500 mx-auto" />
+                      ) : (
+                        <span className="text-red-500">✕</span>
+                      )}
                     </td>
                   ))}
                 </tr>
                 <tr className="border-b">
                   <td className="py-3 px-4 font-medium">API Access</td>
-                  {plans.map(plan => (
+                  {plans.map((plan) => (
                     <td key={plan.id} className="text-center py-3 px-4">
-                      {plan.has_api_access ? <CheckCircle className="h-4 w-4 text-green-500 mx-auto" /> : <span className="text-red-500">✕</span>}
+                      {plan.has_api_access ? (
+                        <CheckCircle className="h-4 w-4 text-green-500 mx-auto" />
+                      ) : (
+                        <span className="text-red-500">✕</span>
+                      )}
                     </td>
                   ))}
                 </tr>
                 <tr className="border-b">
                   <td className="py-3 px-4 font-medium">Priority Support</td>
-                  {plans.map(plan => (
+                  {plans.map((plan) => (
                     <td key={plan.id} className="text-center py-3 px-4">
-                      {plan.has_priority_support ? <CheckCircle className="h-4 w-4 text-green-500 mx-auto" /> : <span className="text-red-500">✕</span>}
+                      {plan.has_priority_support ? (
+                        <CheckCircle className="h-4 w-4 text-green-500 mx-auto" />
+                      ) : (
+                        <span className="text-red-500">✕</span>
+                      )}
                     </td>
                   ))}
                 </tr>
