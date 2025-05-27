@@ -41,10 +41,9 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-// import { initDatabase } from "@/lib/db-schema";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Navbar from "@/components/NavBar";
-// import { initializeApp } from "@/lib/app-init";
+
 
 const inter = Inter({ subsets: ["latin"] });
 

@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Lock, Crown, Filter, Building2, Mail, Zap } from "lucide-react";
 // import { useRazorpaySubscription } from "@/hooks/useRazorpaySubscription";
+import { useRazorpayPayment } from "@/hooks/useRazorpayPayment";
+
 import { useState as reactUseState } from "react";
 
 interface FeatureGateProps {
@@ -18,7 +20,7 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({
   children,
   fallback,
 }) => {
-  const { canAccess } = useRazorpaySubscription();
+  const { canAccess } = useRazorpayPayment();
 
   if (canAccess(feature)) {
     return <>{children}</>;
@@ -65,7 +67,7 @@ function getRequiredPlan(feature: string): string {
 
 // Updated Dashboard component with subscription gates
 export const EnhancedTenderDashboard: React.FC = () => {
-  const { currentSubscription, canAccess } = useRazorpaySubscription();
+  const { currentSubscription, canAccess } = useRazorpayPayment();
   const [selectedColleges, setSelectedColleges] = reactUseState<string[]>([
     "all",
   ]);

@@ -1,7 +1,6 @@
 
-// src/app/api/admin/stats/route.ts
+// src/app/api/admin/stats/route.ts - FIXED
 import { NextResponse } from 'next/server';
-import { SubscriptionInitService } from '@/lib/subscription-init';
 import { supabase } from '@/lib/supabase';
 
 export async function GET(request: Request) {
@@ -19,7 +18,7 @@ export async function GET(request: Request) {
     }
 
     // Get comprehensive statistics
-    const subscriptionStats = await SubscriptionInitService.getSubscriptionStats();
+    const subscriptionStats = await getDetailedSubscriptionStats();
 
     // Get tender statistics
     const { data: tenderStats } = await supabase
@@ -77,5 +76,79 @@ export async function GET(request: Request) {
       },
       { status: 500 }
     );
+  }
+}
+
+async function getDetailedSubscriptionStats() {
+  try {
+    // Get all subscriptions with plan info
+    const { data: allSubscriptions, error } = await supabase
+      .from('user_subscriptions')
+      .select(`
+        id,
+        status,
+        amount_paid,
+        created_at,
+        ends_at,
+        subscription_type,
+        plan:subscription_plans(name, price_monthly, price_yearly)
+      `);
+
+    if (error) throw error;
+
+    const now = new Date();
+    const stats = {
+      total: allSubscriptions?.length || 0,
+      active: 0,
+      expired: 0,
+      cancelled: 0,
+      totalRevenue: 0,
+      monthlyRevenue: 0,
+      yearlyRevenue: 0,
+      byPlan: {} as Record<string, number>,
+      byStatus: {} as Record<string, number>
+    };
+
+    allSubscriptions?.forEach(sub => {
+      // Count by status
+      stats.byStatus[sub.status] = (stats.byStatus[sub.status] || 0) + 1;
+
+      // Count by plan
+      const planName = sub.plan?.name || 'Unknown';
+      stats.byPlan[planName] = (stats.byPlan[planName] || 0) + 1;
+
+      // Calculate revenue
+      stats.totalRevenue += sub.amount_paid || 0;
+
+      if (sub.subscription_type === 'monthly') {
+        stats.monthlyRevenue += sub.amount_paid || 0;
+      } else {
+        stats.yearlyRevenue += sub.amount_paid || 0;
+      }
+
+      // Count active vs expired
+      if (sub.status === 'active' && new Date(sub.ends_at) > now) {
+        stats.active++;
+      } else if (sub.status === 'expired' || new Date(sub.ends_at) <= now) {
+        stats.expired++;
+      } else if (sub.status === 'cancelled') {
+        stats.cancelled++;
+      }
+    });
+
+    return stats;
+  } catch (error) {
+    console.error('Error getting detailed subscription stats:', error);
+    return {
+      total: 0,
+      active: 0,
+      expired: 0,
+      cancelled: 0,
+      totalRevenue: 0,
+      monthlyRevenue: 0,
+      yearlyRevenue: 0,
+      byPlan: {},
+      byStatus: {}
+    };
   }
 }

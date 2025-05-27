@@ -1,4 +1,4 @@
-// src/components/subscription/SubscriptionManager.tsx
+// src/components/subscription/SubscriptionManager.tsx - UPDATED for Simple Payment System
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -25,14 +25,12 @@ declare global {
 type RazorpayOptions = Record<string, unknown>;
 type RazorpayInstance = {
   open: () => void;
-  // Add other methods if needed
 };
 
 type RazorpayPaymentResponse = {
   razorpay_order_id: string;
   razorpay_payment_id: string;
   razorpay_signature: string;
-  // Add other fields if needed
 };
 
 const SubscriptionManager: React.FC = () => {
@@ -52,15 +50,7 @@ const SubscriptionManager: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user?.email) {
-      fetchData();
-    } else {
-      setLoading(false);
-    }
-  }, [user, fetchData]);
-
-  const fetchData = async () => {
+  const fetchData = React.useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -75,6 +65,8 @@ const SubscriptionManager: React.FC = () => {
               a.display_order - b.display_order
           )
         );
+      } else {
+        throw new Error(plansData.error || "Failed to fetch plans");
       }
 
       // Fetch current subscription
@@ -102,7 +94,15 @@ const SubscriptionManager: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.email]);
+
+  useEffect(() => {
+    if (user?.email) {
+      fetchData();
+    } else {
+      setLoading(false);
+    }
+  }, [user, fetchData]);
 
   const handleSubscribe = async (planId: string) => {
     if (!user?.email) {
@@ -112,25 +112,25 @@ const SubscriptionManager: React.FC = () => {
 
     setProcessingPlanId(planId);
     setError(null);
+    setSuccess(null);
 
     try {
-      // Create payment order
-      const response = await fetch("/api/subscription/create", {
+      // Step 1: Create payment order using the new simple payment API
+      const orderResponse = await fetch("/api/payment/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           planId,
           subscriptionType: billingCycle,
-          userId: user.id,
           userEmail: user.email,
-          collegePreferences: ["all"],
+          userId: user.id,
         }),
       });
 
-      const data = await response.json();
+      const orderData = await orderResponse.json();
 
-      if (!data.success) {
-        throw new Error(data.error || "Failed to create subscription order");
+      if (!orderData.success) {
+        throw new Error(orderData.error || "Failed to create payment order");
       }
 
       // Check if Razorpay is loaded
@@ -140,18 +140,18 @@ const SubscriptionManager: React.FC = () => {
         );
       }
 
-      // Configure Razorpay options
+      // Step 2: Configure Razorpay options for one-time payment
       const options = {
-        key: data.razorpayKeyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        order_id: data.orderId,
-        amount: data.amount,
-        currency: data.currency,
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        order_id: orderData.orderId,
+        amount: orderData.amount,
+        currency: orderData.currency,
         name: "RGUKT Tenders Portal",
-        description: `${data.plan.name} Subscription`,
+        description: `${orderData.plan.name} - ${billingCycle} Plan`,
         image: "/logo.png",
         handler: async function (response: RazorpayPaymentResponse) {
           try {
-            // Verify payment
+            // Step 3: Verify payment and create fixed-duration subscription
             const verifyResponse = await fetch("/api/payment/verify", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -162,8 +162,6 @@ const SubscriptionManager: React.FC = () => {
                 planId,
                 subscriptionType: billingCycle,
                 userEmail: user.email,
-                userId: user.id,
-                collegePreferences: ["all"],
               }),
             });
 
@@ -171,7 +169,9 @@ const SubscriptionManager: React.FC = () => {
 
             if (verifyData.success) {
               setSuccess(
-                "Payment successful! Your subscription has been activated."
+                `Payment successful! Your ${billingCycle} subscription is now active and will expire on ${new Date(
+                  Date.now() + (billingCycle === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000
+                ).toLocaleDateString()}.`
               );
               await fetchData();
               setActiveTab("current");
@@ -187,10 +187,12 @@ const SubscriptionManager: React.FC = () => {
                 ? verifyError.message
                 : "Payment verification failed. Please contact support."
             );
+          } finally {
+            setProcessingPlanId(null);
           }
         },
         prefill: {
-          name: user.profile?.full_name || "",
+          name: user.profile?.full_name || user.email.split('@')[0],
           email: user.email,
           contact: user.profile?.phone || "",
         },
@@ -202,28 +204,41 @@ const SubscriptionManager: React.FC = () => {
             setProcessingPlanId(null);
           },
         },
+        notes: {
+          planId,
+          subscriptionType: billingCycle,
+          userEmail: user.email,
+        },
       };
 
-      // Open Razorpay checkout
+      // Step 4: Open Razorpay checkout
       const razorpay = new window.Razorpay(options);
       razorpay.open();
     } catch (error) {
-      console.error("Error creating subscription:", error);
+      console.error("Error creating payment:", error);
       setError(
-        error instanceof Error ? error.message : "Failed to create subscription"
+        error instanceof Error ? error.message : "Failed to create payment order"
       );
-    } finally {
       setProcessingPlanId(null);
     }
   };
 
   const handleCancelSubscription = async () => {
-    if (
-      !currentSubscription ||
-      !confirm(
-        "Are you sure you want to cancel your subscription? You'll continue to have access until the end of your billing period."
-      )
-    ) {
+    if (!currentSubscription) {
+      setError("No active subscription found");
+      return;
+    }
+
+    const confirmMessage = `Are you sure you want to cancel your subscription?
+
+⚠️ Important: This is a one-time payment subscription.
+• You will continue to have access until ${new Date(currentSubscription.current_period_end || currentSubscription.next_billing_at).toLocaleDateString()}
+• No automatic renewal will occur
+• You will need to manually renew when it expires
+
+This action cannot be undone.`;
+
+    if (!confirm(confirmMessage)) {
       return;
     }
 
@@ -241,7 +256,7 @@ const SubscriptionManager: React.FC = () => {
 
       if (data.success) {
         setSuccess(
-          "Subscription cancelled successfully. You'll continue to have access until the end of your billing period."
+          "Subscription cancelled successfully. You'll continue to have access until your subscription expires. No future charges will occur as this was a one-time payment."
         );
         await fetchData();
       } else {
@@ -255,22 +270,24 @@ const SubscriptionManager: React.FC = () => {
     }
   };
 
-  // Note: Pause and Resume are not needed for one-time payments
-  // These subscriptions expire naturally at the end of the period
+  // These are not needed for one-time payments since subscriptions expire naturally
   const handlePauseSubscription = async () => {
     setError(
-      "Pause feature is not available for this subscription type. You can cancel if needed."
+      "Pause feature is not available. This is a one-time payment subscription that expires automatically. You can cancel if needed or wait for natural expiry."
     );
   };
 
   const handleResumeSubscription = async () => {
-    setError("Resume feature is not available for this subscription type.");
+    setError(
+      "Resume feature is not available. To reactivate, please purchase a new subscription when your current one expires."
+    );
   };
 
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <span className="ml-2 text-gray-600">Loading subscription data...</span>
       </div>
     );
   }
@@ -282,13 +299,17 @@ const SubscriptionManager: React.FC = () => {
         <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
           Choose Your Perfect Plan
         </h1>
-        <p className="text-lg sm:text-xl text-gray-600 mb-8">
+        <p className="text-lg sm:text-xl text-gray-600 mb-4">
           Get instant access to all RGUKT tenders with advanced features
         </p>
+        <div className="inline-flex items-center px-4 py-2 bg-blue-50 text-blue-800 rounded-lg text-sm">
+          <CheckCircle className="h-4 w-4 mr-2" />
+          One-time payment • No auto-renewal • Clear expiry dates
+        </div>
 
         {/* Alerts */}
         {error && (
-          <Alert className="mb-6 border-red-200 bg-red-50">
+          <Alert className="mb-6 mt-6 border-red-200 bg-red-50">
             <AlertCircle className="h-4 w-4 text-red-600" />
             <AlertDescription className="text-red-800">
               {error}
@@ -297,7 +318,7 @@ const SubscriptionManager: React.FC = () => {
         )}
 
         {success && (
-          <Alert className="mb-6 border-green-200 bg-green-50">
+          <Alert className="mb-6 mt-6 border-green-200 bg-green-50">
             <CheckCircle className="h-4 w-4 text-green-600" />
             <AlertDescription className="text-green-800">
               {success}
@@ -319,7 +340,7 @@ const SubscriptionManager: React.FC = () => {
             My Subscription
           </TabsTrigger>
           <TabsTrigger value="faq" data-value="faq">
-            FAQ
+            FAQ & Support
           </TabsTrigger>
         </TabsList>
 

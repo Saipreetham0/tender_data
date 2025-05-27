@@ -48,6 +48,12 @@ const UserAvatar = ({ user, size = "sm" }: UserAvatarProps) => {
     lg: "w-12 h-12",
   };
 
+  const sizePixels = {
+    sm: 32,
+    md: 40,
+    lg: 48,
+  };
+
   const textSizes = {
     sm: "text-xs",
     md: "text-sm",
@@ -126,8 +132,8 @@ const UserAvatar = ({ user, size = "sm" }: UserAvatarProps) => {
           onLoad={handleImageLoad}
           onError={handleImageError}
           loading="lazy"
-          width={sizeClasses[size]}
-          height={sizeClasses[size]}
+          width={sizePixels[size]}
+          height={sizePixels[size]}
         />
       </div>
     );
