@@ -12,9 +12,8 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
   experimental: {
-    // Skip building the admin cron page to avoid serialization issues
-    staticPageGenerationTimeout: 60,
-    outputFileTracingIgnores: ['**/admin/cron/**'],
+    // Production optimizations
+    optimizeCss: true,
   },
   images: {
     remotePatterns: [
