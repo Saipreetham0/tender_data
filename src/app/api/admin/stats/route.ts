@@ -114,7 +114,7 @@ async function getDetailedSubscriptionStats() {
       stats.byStatus[sub.status] = (stats.byStatus[sub.status] || 0) + 1;
 
       // Count by plan
-      const planName = sub.plan?.name || 'Unknown';
+      const planName = sub.plan[0]?.name || 'Unknown';
       stats.byPlan[planName] = (stats.byPlan[planName] || 0) + 1;
 
       // Calculate revenue

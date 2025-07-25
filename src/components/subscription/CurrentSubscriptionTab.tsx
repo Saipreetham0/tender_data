@@ -1,3 +1,6 @@
+
+
+
 "use client";
 
 import React, { useState } from "react";
@@ -30,12 +33,19 @@ import { UserSubscription, PaymentHistory } from "@/types/subscription";
 import { formatPrice, getStatusColor } from "@/utils/subscription";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
+interface User {
+  id?: string;
+  email?: string;
+  // Add other user properties as needed
+}
+
 interface CurrentSubscriptionTabProps {
   currentSubscription: UserSubscription | null;
   paymentHistory: PaymentHistory[];
   handleCancelSubscription: () => void;
   handlePauseSubscription: () => void;
   handleResumeSubscription: () => void;
+  user?: User | null;
 }
 
 const CurrentSubscriptionTab: React.FC<CurrentSubscriptionTabProps> = ({

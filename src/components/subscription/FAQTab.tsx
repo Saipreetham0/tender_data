@@ -147,6 +147,7 @@
 // export default FAQTab;
 
 
+
 // src/components/subscription/FAQTab.tsx - UPDATED for Simple Payment System
 "use client";
 
@@ -168,7 +169,7 @@ import {
   Globe,
   Clock,
   CheckCircle,
-  AlertCircle
+
 } from "lucide-react";
 
 const faqs = [
@@ -266,7 +267,7 @@ const FAQTab: React.FC = () => {
         </CardHeader>
         <CardContent className="text-blue-700">
           <p className="mb-3">
-            We've simplified our subscription system for better transparency and user control:
+            We&apos;ve simplified our subscription system for better transparency and user control:
           </p>
           <div className="grid md:grid-cols-2 gap-3 text-sm">
             <div className="flex items-start space-x-2">

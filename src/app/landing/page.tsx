@@ -1,38 +1,6 @@
-// // app/page.tsx
-// "use client";
-// import TenderDashboard from "@/components/Dashboard";
-
-// export default function Home() {
-//   return <TenderDashboard />;
-// }
-
-
-// // src/app/page.tsx - Updated main page
-// 'use client';
-// import { useEffect } from 'react';
-// import { useRouter } from 'next/navigation';
-
-// export default function Home() {
-//   const router = useRouter();
-
-//   useEffect(() => {
-//     // Redirect to dashboard
-//     router.replace('/dashboard');
-//   }, [router]);
-
-//   return (
-//     <div className="min-h-screen flex items-center justify-center">
-//       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-//     </div>
-//   );
-// }
-
-
-
 // src/app/landing/page.tsx
 "use client";
 
-import Footer from "@/components/Footer";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -43,8 +11,8 @@ import {
   Star,
   ArrowRight,
   TrendingUp,
-  // Shield,
-  // Clock,
+  Shield,
+  Clock,
   Globe,
   Crown,
 //   Menu,
@@ -64,38 +32,12 @@ const LandingPage = () => {
     "yearly"
   );
 //   const [scrollY, setScrollY] = useState(0);
-  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true);
     // const handleScroll = () => setScrollY(window.scrollY);
     // window.addEventListener("scroll", handleScroll);
     // return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  const handleSubscriptionRedirect = () => {
-    if (isMounted) {
-      router.push("/subscription");
-    }
-  };
-
-  const handleHomeRedirect = () => {
-    if (isMounted) {
-      router.push("/");
-    }
-  };
-
-  const handleLoginRedirect = () => {
-    if (isMounted) {
-      router.push("/login");
-    }
-  };
-
-  const toggleBillingCycle = () => {
-    if (isMounted) {
-      setBillingCycle(billingCycle === "monthly" ? "yearly" : "monthly");
-    }
-  };
 
   const features = [
     {
@@ -166,23 +108,44 @@ const LandingPage = () => {
 
   const plans = [
     {
-      name: "All Access",
-      price: { monthly: 125, yearly: 1499 },
-      description: "Complete tender discovery solution",
+      name: "Free",
+      price: { monthly: 0, yearly: 0 },
+      description: "Perfect for getting started",
+      features: [
+        "Access to 1 campus",
+        "Weekly email summaries",
+        "Basic search",
+        "5 tender views per day",
+      ],
+      popular: false,
+      cta: "Start Free",
+    },
+    {
+      name: "All Colleges",
+      price: { monthly: 299, yearly: 2099 },
+      description: "Most popular for professionals",
       features: [
         "All 5 RGUKT campuses",
         "Real-time email alerts",
         "Unlimited tender views",
-        "Advanced search & filtering",
-        "Priority email support", 
-        "Custom notifications",
-        "API access (coming soon)",
-        "Analytics dashboard",
-        "Early access to new features",
-        "24/7 support",
+        "Priority email support",
       ],
       popular: true,
       cta: "Get Started",
+    },
+    {
+      name: "Pro",
+      price: { monthly: 999, yearly: 6999 },
+      description: "For organizations and teams",
+      features: [
+        "Everything in All Colleges",
+        "API access (coming soon)",
+        "Priority support",
+        "Custom notifications",
+        "Early access to new features",
+      ],
+      popular: false,
+      cta: "Contact Sales",
     },
   ];
 
@@ -235,7 +198,7 @@ const LandingPage = () => {
           <div className="flex justify-between items-center h-16">
             <div
               className="flex items-center space-x-3 cursor-pointer"
-              onClick={handleHomeRedirect}
+              onClick={() => router.push("/")}
             >
               <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
                 <Building2 className="h-6 w-6 text-white" />
@@ -278,11 +241,11 @@ const LandingPage = () => {
 
 
             <div className="hidden md:flex items-center space-x-4">
-              <Button variant="ghost" onClick={handleLoginRedirect}>
+              <Button variant="ghost" onClick={() => router.push("/login")}>
                 Sign In
               </Button>
               <Button
-                onClick={handleSubscriptionRedirect}
+                onClick={() => router.push("/subscription")}
                 className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
               >
                 Get Started
@@ -332,13 +295,13 @@ const LandingPage = () => {
               <div className="pt-4 space-y-2">
                 <Button
                   variant="outline"
-                  onClick={handleLoginRedirect}
+                  onClick={() => router.push("/login")}
                   className="w-full"
                 >
                   Sign In
                 </Button>
                 <Button
-                  onClick={handleSubscriptionRedirect}
+                  onClick={() => router.push("/subscription")}
                   className="w-full bg-gradient-to-r from-blue-600 to-indigo-600"
                 >
                   Get Started
@@ -387,17 +350,17 @@ const LandingPage = () => {
             <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-6 mb-16">
               <Button
                 size="lg"
-                onClick={handleSubscriptionRedirect}
+                onClick={() => router.push("/subscription")}
                 className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
               >
-                Get Started - ₹1,499/year
+                Start Free Trial
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
 
               <Button
                 variant="outline"
                 size="lg"
-                onClick={handleHomeRedirect}
+                onClick={() => router.push("/")}
                 className="px-8 py-4 text-lg border-2 hover:bg-gray-50"
               >
                 <Globe className="mr-2 h-5 w-5" />
@@ -566,14 +529,14 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              One Plan, 
+              Simple, Affordable
               <span className="block bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                All Features
+                Pricing
               </span>
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-              Everything you need to discover RGUKT tenders. No tiers, no limitations.
-              Cancel anytime.
+              Start free, upgrade when you need more. No hidden fees, no
+              surprises. Cancel anytime.
             </p>
 
             {/* Billing Toggle */}
@@ -584,7 +547,11 @@ const LandingPage = () => {
                 Monthly
               </span>
               <button
-                onClick={toggleBillingCycle}
+                onClick={() =>
+                  setBillingCycle(
+                    billingCycle === "monthly" ? "yearly" : "monthly"
+                  )
+                }
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                   billingCycle === "yearly" ? "bg-blue-600" : "bg-gray-200"
                 }`}
@@ -604,63 +571,59 @@ const LandingPage = () => {
               </span>
               {billingCycle === "yearly" && (
                 <Badge className="bg-green-100 text-green-800 border-green-200">
-                  Save ₹1 annually
+                  Save 30%
                 </Badge>
               )}
             </div>
           </div>
 
-          <div className="flex justify-center">
-            <div className="max-w-md w-full">
-              {plans.map((plan, index) => (
-                <Card
-                  key={index}
-                  className="relative border-2 border-blue-500 shadow-xl"
-                >
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {plans.map((plan, index) => (
+              <Card
+                key={index}
+                className={`relative ${plan.popular ? "border-2 border-blue-500 shadow-xl scale-105" : "border shadow-lg"}`}
+              >
+                {plan.popular && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                     <Badge className="bg-blue-600 text-white px-4 py-1">
                       <Crown className="h-3 w-3 mr-1" />
-                      Best Value
+                      Most Popular
                     </Badge>
                   </div>
+                )}
 
-                  <CardHeader className="text-center pb-2">
-                    <CardTitle className="text-2xl font-bold text-gray-900 mb-2">
-                      {plan.name}
-                    </CardTitle>
-                    <div className="text-4xl font-bold text-gray-900 mb-2">
-                      ₹{plan.price[billingCycle].toLocaleString()}
-                      <span className="text-lg font-normal text-gray-500">
-                        /{billingCycle === "yearly" ? "year" : "month"}
-                      </span>
-                    </div>
-                    <p className="text-gray-600">{plan.description}</p>
-                  </CardHeader>
+                <CardHeader className="text-center pb-2">
+                  <CardTitle className="text-2xl font-bold text-gray-900 mb-2">
+                    {plan.name}
+                  </CardTitle>
+                  <div className="text-4xl font-bold text-gray-900 mb-2">
+                    ₹{plan.price[billingCycle].toLocaleString()}
+                    <span className="text-lg font-normal text-gray-500">
+                      /{billingCycle === "yearly" ? "year" : "month"}
+                    </span>
+                  </div>
+                  <p className="text-gray-600">{plan.description}</p>
+                </CardHeader>
 
-                  <CardContent className="pt-4">
-                    <ul className="space-y-3 mb-8">
-                      {plan.features.map((feature, idx) => (
-                        <li key={idx} className="flex items-center">
-                          <CheckCircle className="h-5 w-5 text-green-500 mr-3 flex-shrink-0" />
-                          <span className="text-gray-600">{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
+                <CardContent className="pt-4">
+                  <ul className="space-y-3 mb-8">
+                    {plan.features.map((feature, idx) => (
+                      <li key={idx} className="flex items-center">
+                        <CheckCircle className="h-5 w-5 text-green-500 mr-3 flex-shrink-0" />
+                        <span className="text-gray-600">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
 
-                    <Button
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-lg py-3"
-                      onClick={() => {
-                        if (typeof window !== 'undefined') {
-                          router.push("/subscription");
-                        }
-                      }}
-                    >
-                      {plan.cta}
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                  <Button
+                    className={`w-full ${plan.popular ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-900 hover:bg-gray-800"}`}
+                    onClick={() => router.push("/subscription")}
+                  >
+                    {plan.cta}
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
@@ -673,32 +636,24 @@ const LandingPage = () => {
             <span className="block">Tender Journey?</span>
           </h2>
           <p className="text-xl text-blue-100 mb-12">
-            Join us in building the future of tender discovery. Get complete access
-            to all features and never miss an opportunity.
+            Join us in building the future of tender discovery. Start with our
+            free plan and upgrade as we add more features.
           </p>
 
           <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-6">
             <Button
               size="lg"
-              onClick={() => {
-                if (typeof window !== 'undefined') {
-                  router.push("/subscription");
-                }
-              }}
+              onClick={() => router.push("/subscription")}
               className="px-8 py-4 bg-white text-blue-600 hover:bg-gray-50 text-lg font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
             >
-              Get Started - ₹1,499/month
+              Start Free
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
 
             <Button
               variant="outline"
               size="lg"
-              onClick={() => {
-                if (typeof window !== 'undefined') {
-                  router.push("/");
-                }
-              }}
+              onClick={() => router.push("/")}
               className="px-8 py-4 text-lg border-2 border-white text-black hover:bg-white hover:text-blue-600"
             >
               Browse Tenders
@@ -706,17 +661,13 @@ const LandingPage = () => {
           </div>
 
           <div className="mt-8 text-blue-100 text-sm">
-            ✓ All features included ✓ No setup fees ✓ Cancel anytime
+            ✓ Free forever plan ✓ No setup fees ✓ Cancel anytime
           </div>
         </div>
       </section>
 
-
-
-        <Footer />
-
       {/* Footer */}
-      {/* <footer id="contact" className="bg-gray-900 text-white py-16">
+      <footer id="contact" className="bg-gray-900 text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-8">
             <div className="col-span-2">
@@ -776,7 +727,7 @@ const LandingPage = () => {
                 </li>
                 <li>
                   <button
-                    onClick={handleSubscriptionRedirect}
+                    onClick={() => router.push("/subscription")}
                     className="hover:text-white transition-colors"
                   >
                     Get Started
@@ -834,12 +785,9 @@ const LandingPage = () => {
             </div>
           </div>
         </div>
-      </footer> */}
-
-
+      </footer>
     </div>
   );
 };
 
 export default LandingPage;
-

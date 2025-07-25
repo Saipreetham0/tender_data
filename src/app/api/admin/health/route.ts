@@ -1,104 +1,109 @@
-// src/app/api/admin/health/route.ts - FIXED
-import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+// src/app/api/admin/health/route.ts - Production-ready health check
+import { NextRequest, NextResponse } from 'next/server';
+import { AuthService } from '@/lib/auth-jwt';
+import { monitoring } from '@/lib/monitoring';
+import { logger } from '@/lib/logger';
+import { createClient } from '@supabase/supabase-js';
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
+  const startTime = Date.now();
+  
   try {
-    // Check for API key
-    const { searchParams } = new URL(request.url);
-    const apiKey = searchParams.get('key');
-    const secretKey = process.env.CRON_API_SECRET_KEY;
-
-    if (!apiKey || apiKey !== secretKey) {
+    // Authentication check
+    const authHeader = request.headers.get('Authorization');
+    const apiKey = new URL(request.url).searchParams.get('key');
+    
+    if (!authHeader && !apiKey) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: 'Authentication required' },
         { status: 401 }
       );
     }
 
-    // Get system health
-    const health = await getSystemHealth();
+    // Validate API key or JWT token
+    if (apiKey) {
+      const isValid = await AuthService.authenticateAdmin(apiKey);
+      if (!isValid) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid API key' },
+          { status: 401 }
+        );
+      }
+    } else if (authHeader) {
+      try {
+        await AuthService.requireAdminAuth(request);
+      } catch (error) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid authentication' },
+          { status: 401 }
+        );
+      }
+    }
+
+    // Get comprehensive system health
+    const systemHealth = await monitoring.getSystemHealth();
+
+    // Get subscription stats
     const stats = await getSubscriptionStats();
 
-    return NextResponse.json({
+    // Combine health and stats
+    const response = {
       success: true,
-      health,
+      ...systemHealth,
       stats,
-      timestamp: new Date().toISOString()
+    };
+
+    // Log health check
+    const responseTime = Date.now() - startTime;
+    logger.info('Health check completed', {
+      status: systemHealth.status,
+      responseTime,
+      checksCount: systemHealth.checks.length,
+      requestId: request.headers.get('X-Request-ID'),
+    });
+
+    // Record metrics
+    await monitoring.recordPerformanceMetric('/api/admin/health', responseTime, 200);
+
+    return NextResponse.json(response, {
+      status: systemHealth.status === 'healthy' ? 200 : 503,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Content-Type': 'application/json',
+      },
     });
   } catch (error) {
-    console.error('Error checking system health:', error);
+    const responseTime = Date.now() - startTime;
+    
+    logger.error('Health check failed', error as Error, {
+      responseTime,
+      requestId: request.headers.get('X-Request-ID'),
+    });
+
+    await monitoring.recordErrorMetric(
+      error instanceof Error ? error.message : 'Health check failed',
+      'health-check'
+    );
+
     return NextResponse.json(
       {
         success: false,
         error: error instanceof Error ? error.message : 'Health check failed',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        status: 'unhealthy',
       },
       { status: 500 }
     );
   }
 }
 
-// System health check function
-async function getSystemHealth() {
-  const issues: string[] = [];
-  const services = {
-    database: false,
-    razorpay: false,
-    email: false,
-    cron: false
-  };
-
-  try {
-    // Test database connection
-    try {
-      const { error } = await supabase.from('subscription_plans').select('count').limit(1);
-      services.database = !error;
-      if (error) issues.push(`Database: ${error.message}`);
-    } catch (error) {
-      issues.push('Database: Connection failed');
-    }
-
-    // Test Razorpay configuration
-    if (process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
-      services.razorpay = true;
-    } else {
-      issues.push('Razorpay: Missing API keys');
-    }
-
-    // Test email configuration
-    if (process.env.RESEND_API_KEY) {
-      services.email = true;
-    } else {
-      issues.push('Email: Missing Resend API key');
-    }
-
-    // Test cron configuration
-    if (process.env.CRON_API_SECRET_KEY) {
-      services.cron = true;
-    } else {
-      issues.push('Cron: Missing API secret key');
-    }
-
-    const healthy = Object.values(services).every(status => status);
-
-    return {
-      healthy,
-      issues,
-      services
-    };
-  } catch (error) {
-    return {
-      healthy: false,
-      issues: [`System health check failed: ${error}`],
-      services
-    };
-  }
-}
-
 // Get subscription statistics
 async function getSubscriptionStats() {
   try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
     // Get active subscriptions
     const { data: activeSubscriptions, error: activeError } = await supabase
       .from('user_subscriptions')
@@ -124,13 +129,13 @@ async function getSubscriptionStats() {
 
     // Calculate statistics
     const totalActiveSubscriptions = activeSubscriptions?.length || 0;
-    const totalRevenue = activeSubscriptions?.reduce((sum, sub) => sum + (sub.amount_paid || 0), 0) || 0;
+    const totalRevenue = activeSubscriptions?.reduce((sum: number, sub: any) => sum + (sub.amount_paid || 0), 0) || 0;
     const recentSignups = recentSubs?.length || 0;
 
     // Plan distribution
     const planDistribution: Record<string, number> = {};
-    activeSubscriptions?.forEach(sub => {
-      const planName = sub.plan?.name || 'Unknown';
+    activeSubscriptions?.forEach((sub: any) => {
+      const planName = sub.plan[0]?.name || 'Unknown';
       planDistribution[planName] = (planDistribution[planName] || 0) + 1;
     });
 
@@ -150,3 +155,4 @@ async function getSubscriptionStats() {
     };
   }
 }
+

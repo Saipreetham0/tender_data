@@ -1,5 +1,6 @@
 // next.config.js
 const nextConfig = {
+  reactStrictMode: false,
   images: {
     remotePatterns: [
       {
