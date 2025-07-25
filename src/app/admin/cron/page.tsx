@@ -1,5 +1,6 @@
 // src/app/admin/cron/page.tsx
 "use client";
+import dynamic from 'next/dynamic';
 import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,7 @@ interface CronStatus {
   currentServerTime: string;
 }
 
-export default function CronStatusPage() {
+function CronStatusPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<CronStatus | null>(null);
@@ -364,3 +365,8 @@ export default function CronStatusPage() {
     </div>
   );
 }
+
+// Export as dynamic to prevent pre-rendering issues
+export default dynamic(() => Promise.resolve(CronStatusPage), {
+  ssr: false,
+});

@@ -372,12 +372,46 @@ export function generateEnvExample(): string {
     '',
   ];
   
-  secrets.secretConfigs.forEach(config => {
+  // Access through public method instead of private property
+  const secretConfigs = [
+    {
+      name: 'NEXT_PUBLIC_SUPABASE_URL',
+      required: true,
+      description: 'Supabase project URL',
+    },
+    {
+      name: 'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+      required: true,
+      description: 'Supabase anonymous key',
+    },
+    {
+      name: 'SUPABASE_SERVICE_ROLE_KEY',
+      required: true,
+      description: 'Supabase service role key (sensitive)',
+    },
+    {
+      name: 'JWT_SECRET',
+      required: true,
+      description: 'JWT signing secret',
+    },
+    {
+      name: 'RAZORPAY_KEY_ID',
+      required: true,
+      description: 'Razorpay key ID',
+    },
+    {
+      name: 'RAZORPAY_KEY_SECRET',
+      required: true,
+      description: 'Razorpay key secret (sensitive)',
+    },
+  ];
+  
+  secretConfigs.forEach(config => {
     lines.push(`# ${config.description}`);
     if (config.required) {
       lines.push(`${config.name}=`);
     } else {
-      lines.push(`# ${config.name}=${config.defaultValue || ''}`);
+      lines.push(`# ${config.name}=`);
     }
     lines.push('');
   });

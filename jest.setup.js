@@ -82,19 +82,17 @@ global.console = {
 }
 
 // Mock window.location
-Object.defineProperty(window, 'location', {
-  value: {
-    href: 'http://localhost:3000',
-    origin: 'http://localhost:3000',
-    pathname: '/',
-    search: '',
-    hash: '',
-    reload: jest.fn(),
-    assign: jest.fn(),
-    replace: jest.fn(),
-  },
-  writable: true,
-})
+delete window.location;
+window.location = {
+  href: 'http://localhost:3000',
+  origin: 'http://localhost:3000',
+  pathname: '/',
+  search: '',
+  hash: '',
+  reload: jest.fn(),
+  assign: jest.fn(),
+  replace: jest.fn(),
+};
 
 // Mock window.history
 Object.defineProperty(window, 'history', {

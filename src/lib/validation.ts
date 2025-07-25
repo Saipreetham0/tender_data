@@ -25,14 +25,14 @@ export const userUpdateSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters').max(100, 'Full name too long').optional(),
   organization: z.string().max(100, 'Organization name too long').optional(),
   phone: phoneSchema.optional(),
-  preferences: z.record(z.union([z.string(), z.number(), z.boolean()])).optional(),
+  preferences: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
 });
 
 // Subscription schemas
 export const subscriptionPlanSchema = z.object({
   planId: uuidSchema,
   planName: z.string().min(1, 'Plan name is required'),
-  type: z.enum(['monthly', 'yearly'], { errorMap: () => ({ message: 'Type must be monthly or yearly' }) }),
+  type: z.enum(['monthly', 'yearly'], 'Type must be monthly or yearly'),
   price: z.number().min(0, 'Price must be non-negative'),
   features: z.array(z.string()).optional(),
 });
@@ -125,7 +125,7 @@ export const paginatedResponseSchema = z.object({
 export const healthCheckSchema = z.object({
   status: z.enum(['healthy', 'unhealthy', 'degraded']),
   timestamp: z.string().datetime(),
-  services: z.record(z.object({
+  services: z.record(z.string(), z.object({
     status: z.enum(['healthy', 'unhealthy']),
     responseTime: z.number().optional(),
     error: z.string().optional(),
@@ -146,7 +146,7 @@ export function validateSchema<T>(schema: z.ZodSchema<T>) {
       return schema.parse(data);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const errorMessages = error.errors.map(err => `${err.path.join('.')}: ${err.message}`);
+        const errorMessages = error.issues.map(err => `${err.path.join('.')}: ${err.message}`);
         throw new Error(`Validation failed: ${errorMessages.join(', ')}`);
       }
       throw error;
@@ -185,7 +185,7 @@ export function validateAndSanitize<T>(schema: z.ZodSchema<T>, data: unknown): T
     return schema.parse(data);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const firstError = error.errors[0];
+      const firstError = error.issues[0];
       throw new ValidationError(firstError.message, firstError.path.join('.'));
     }
     throw error;

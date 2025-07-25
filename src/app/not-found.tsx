@@ -1,6 +1,5 @@
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileQuestion, Home, ArrowLeft } from 'lucide-react';
+import { FileQuestion, Home } from 'lucide-react';
 import Link from 'next/link';
 
 export default function NotFound() {
@@ -15,29 +14,18 @@ export default function NotFound() {
             Page not found
           </CardTitle>
           <CardDescription className="mt-2 text-gray-600">
-            The page you're looking for doesn't exist or has been moved.
+            The page you&apos;re looking for doesn&apos;t exist or has been moved.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex space-x-3">
-            <Button asChild className="flex-1 flex items-center justify-center space-x-2">
-              <Link href="/">
-                <Home className="h-4 w-4" />
-                <span>Go home</span>
-              </Link>
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                if (typeof window !== 'undefined') {
-                  window.history.back();
-                }
-              }}
-              className="flex-1 flex items-center justify-center space-x-2"
+          <div className="flex justify-center">
+            <Link 
+              href="/"
+              className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 space-x-2"
             >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Go back</span>
-            </Button>
+              <Home className="h-4 w-4" />
+              <span>Go home</span>
+            </Link>
           </div>
         </CardContent>
       </Card>
