@@ -86,6 +86,3 @@ export default function RootLayout({
   );
 }
 
-// src/components/auth/AuthComponents.tsx
-// Move the auth components to a separate file
-export * from "@/components/AuthComponents";
