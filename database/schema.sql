@@ -155,6 +155,17 @@ CREATE TABLE IF NOT EXISTS user_tender_access (
     UNIQUE(user_id, tender_id, access_type)
 );
 
+-- Email subscriptions for tender notifications by campus
+CREATE TABLE IF NOT EXISTS email_subscriptions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email VARCHAR(255) NOT NULL,
+    campus VARCHAR(100) NOT NULL,
+    active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(email, campus)
+);
+
 -- =============================================
 -- USAGE TRACKING TABLES
 -- =============================================
@@ -306,6 +317,12 @@ CREATE INDEX IF NOT EXISTS idx_tenders_tags ON tenders USING gin(tags);
 CREATE INDEX IF NOT EXISTS idx_user_tender_access_user_id ON user_tender_access(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_tender_access_tender_id ON user_tender_access(tender_id);
 CREATE INDEX IF NOT EXISTS idx_user_tender_access_accessed_at ON user_tender_access(accessed_at);
+
+-- Email subscriptions indexes
+CREATE INDEX IF NOT EXISTS idx_email_subscriptions_email ON email_subscriptions(email);
+CREATE INDEX IF NOT EXISTS idx_email_subscriptions_campus ON email_subscriptions(campus);
+CREATE INDEX IF NOT EXISTS idx_email_subscriptions_active ON email_subscriptions(active);
+CREATE INDEX IF NOT EXISTS idx_email_subscriptions_email_campus ON email_subscriptions(email, campus);
 
 -- User usage indexes
 CREATE INDEX IF NOT EXISTS idx_user_usage_user_email ON user_usage(user_email);
@@ -476,6 +493,10 @@ CREATE TRIGGER update_user_usage_updated_at
     BEFORE UPDATE ON user_usage
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+CREATE TRIGGER update_email_subscriptions_updated_at
+    BEFORE UPDATE ON email_subscriptions
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 -- =============================================
 -- CLEANUP FUNCTIONS
 -- =============================================
@@ -541,6 +562,7 @@ COMMENT ON TABLE payment_history IS 'Audit trail for all payment events';
 COMMENT ON TABLE tenders IS 'Tender notices and related information';
 COMMENT ON TABLE user_tender_access IS 'Tracking of user access to tenders';
 COMMENT ON TABLE user_usage IS 'Daily usage statistics per user';
+COMMENT ON TABLE email_subscriptions IS 'Email subscriptions for campus-specific tender notifications';
 COMMENT ON TABLE application_logs IS 'Application-wide logging for debugging and monitoring';
 COMMENT ON TABLE metrics IS 'System and business metrics for monitoring';
 COMMENT ON TABLE cron_logs IS 'Cron job execution logs';
@@ -568,6 +590,7 @@ GRANT SELECT, INSERT, UPDATE ON payment_orders TO authenticated;
 GRANT SELECT ON payment_history TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON user_tender_access TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON user_usage TO authenticated;
+GRANT SELECT, INSERT, UPDATE ON email_subscriptions TO authenticated;
 
 -- Service role has full access (bypasses RLS)
 -- This is handled automatically by Supabase for the service role

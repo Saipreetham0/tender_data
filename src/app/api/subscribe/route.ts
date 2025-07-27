@@ -15,31 +15,33 @@ function isValidEmail(email: string): boolean {
 }
 
 
-// Function to create the subscriptions table if it doesn't exist
+// Function to check if the email_subscriptions table exists
 async function ensureTablesExist(): Promise<boolean> {
   try {
-    // Use raw SQL to check if table exists and create it if it doesn't
-    const { error } = await supabase.rpc('create_subscriptions_if_not_exists');
+    // Try to query the email_subscriptions table to see if it exists
+    const { error: testError } = await supabase
+      .from('email_subscriptions')
+      .select('count(*)')
+      .limit(1);
 
-    if (error) {
-      console.error('Error creating tables:', error);
-      // Try a simpler approach - just check if attempting to use the table generates an error
-      const { error: testError } = await supabase
-        .from('subscriptions')
-        .select('count(*)')
-        .limit(1);
-
-      if (testError && testError.message.includes('does not exist')) {
+    if (testError) {
+      console.error('Email subscriptions table access error:', testError);
+      // Check if it's a "table doesn't exist" error
+      if (testError.message.includes('does not exist') || 
+          testError.message.includes('relation') || 
+          testError.code === 'PGRST116') {
+        console.log('email_subscriptions table does not exist');
         return false;
       }
-
-      // If we don't get a "table doesn't exist" error, assume the table exists
-      return !testError;
+      // For other errors, assume table exists but there's a permissions issue
+      console.warn('Table exists but query failed:', testError.message);
+      return true;
     }
 
+    console.log('email_subscriptions table exists and is accessible');
     return true;
   } catch (error) {
-    console.error('Error ensuring tables exist:', error);
+    console.error('Error checking table existence:', error);
     return false;
   }
 }
@@ -86,7 +88,7 @@ export async function POST(request: Request) {
     // Check if email already exists for this campus
     try {
       const { data: existingSubscription, error: queryError } = await supabase
-        .from('subscriptions')
+        .from('email_subscriptions')
         .select('*')
         .eq('email', email)
         .eq('campus', campus);
@@ -118,7 +120,7 @@ export async function POST(request: Request) {
     // Add subscription to the database
     try {
       const { error: insertError } = await supabase
-        .from('subscriptions')
+        .from('email_subscriptions')
         .insert([
           {
             email,
@@ -267,7 +269,7 @@ export async function GET(request: Request) {
 
       // Update the subscription to inactive
       const { error: updateError } = await supabase
-        .from('subscriptions')
+        .from('email_subscriptions')
         .update({ active: false })
         .eq('id', data.subscription_id);
 
