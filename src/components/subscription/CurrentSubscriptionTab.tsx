@@ -28,6 +28,7 @@ import {
   Zap,
   Crown,
   Star,
+  Settings,
 } from "lucide-react";
 import { UserSubscription, PaymentHistory } from "@/types/subscription";
 import { formatPrice, getStatusColor } from "@/utils/subscription";
@@ -77,68 +78,83 @@ const CurrentSubscriptionTab: React.FC<CurrentSubscriptionTabProps> = ({
 
   if (!currentSubscription) {
     return (
-      <div className="flex flex-col items-center justify-center py-10">
-        <AlertCircle className="h-12 w-12 text-gray-400 mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">
-          No Active Subscription
-        </h3>
-        <p className="text-gray-500 mb-6 text-center max-w-md">
-          You don&apos;t have an active subscription. Choose a plan to get
-          started with advanced features.
-        </p>
-        <Button
-          onClick={() =>
-            document
-              .querySelector('[data-value="plans"]')
-              ?.dispatchEvent(new Event("click"))
-          }
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          View Plans
-        </Button>
+      <div className="max-w-2xl mx-auto">
+        <Card className="text-center border border-gray-200 shadow-lg">
+          <CardContent className="p-8">
+            <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <AlertCircle className="h-8 w-8 text-blue-500" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-3">
+              No Active Subscription
+            </h3>
+            <p className="text-gray-600 mb-6">
+              You&apos;re currently on the free plan. Upgrade to unlock all features and get access to every RGUKT tender.
+            </p>
+            <Button
+              onClick={() =>
+                document
+                  .querySelector('[data-value="plans"]')
+                  ?.dispatchEvent(new Event("click"))
+              }
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg"
+            >
+              <Zap className="h-4 w-4 mr-2" />
+              Upgrade Now
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Subscription Overview */}
-      <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+      <Card className="border border-gray-200 shadow-lg">
         <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex items-center space-x-4">
-              <div className="p-3 bg-blue-100 rounded-full">
-                {getPlanIcon(currentSubscription.plan.name)}
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="flex items-start space-x-4">
+              <div className="p-3 bg-blue-600 rounded-lg text-white">
+                <Crown className="h-6 w-6" />
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {currentSubscription.plan.name} Plan
-                </h3>
-                <p className="text-sm text-gray-600">
-                  {currentSubscription.subscription_type === "monthly"
-                    ? "Monthly"
-                    : "Yearly"}{" "}
-                  billing
+              <div className="space-y-1">
+                <div className="flex items-center space-x-3">
+                  <h3 className="text-2xl font-bold text-gray-900">
+                    {currentSubscription.plan.name} Plan
+                  </h3>
+                  <Badge className="bg-green-100 text-green-800 border-green-200">
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    ACTIVE
+                  </Badge>
+                </div>
+                <p className="text-gray-600">
+                  {currentSubscription.subscription_type === "monthly" ? "Monthly" : "Yearly"} subscription
+                </p>
+                <p className="text-sm text-gray-500">
+                  Expires on {new Date(currentSubscription.current_period_end || currentSubscription.next_billing_at).toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <Badge className={getStatusColor(currentSubscription.status)}>
-                {currentSubscription.status === "active" && (
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                )}
-                {currentSubscription.status === "paused" && (
-                  <Pause className="h-3 w-3 mr-1" />
-                )}
-                {currentSubscription.status}
-              </Badge>
+            
+            <div className="flex flex-col sm:flex-row gap-3">
               <Button
                 variant="outline"
-                size="sm"
                 onClick={() => setShowManageModal(true)}
-                className="transition-all hover:bg-blue-50"
+                className="border-gray-200 hover:bg-gray-50"
               >
-                Manage <ChevronRight className="h-4 w-4 ml-1" />
+                <Settings className="h-4 w-4 mr-2" />
+                Manage Subscription
+              </Button>
+              <Button
+                onClick={() => setShowPaymentHistory(!showPaymentHistory)}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <CreditCard className="h-4 w-4 mr-2" />
+                Payment History
               </Button>
             </div>
           </div>

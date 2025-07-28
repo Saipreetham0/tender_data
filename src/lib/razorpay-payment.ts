@@ -398,7 +398,7 @@ export class RazorpayPaymentService {
 
       // Create Razorpay order
       const order = await razorpay.orders.create({
-        amount: Math.round(amount), // Amount in paise
+        amount: Math.round(amount * 100), // Convert to paise (multiply by 100)
         currency: 'INR',
         receipt: `receipt_${Date.now()}`,
         notes: {

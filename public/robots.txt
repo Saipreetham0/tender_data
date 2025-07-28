@@ -1,0 +1,24 @@
+User-agent: *
+Allow: /
+
+# Allow crawling of main pages
+Allow: /landing
+Allow: /login
+Allow: /dashboard
+Allow: /subscription
+Allow: /profile
+
+# Block private pages
+Disallow: /admin/
+Disallow: /auth/
+Disallow: /api/
+
+# Allow policy pages
+Allow: /terms
+Allow: /privacy
+Allow: /refund
+Allow: /disclaimer
+Allow: /cookies
+
+# Sitemap location
+Sitemap: https://tendernotify.site/sitemap.xml

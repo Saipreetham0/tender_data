@@ -1,5 +1,3 @@
-
-
 // src/contexts/AuthContext.tsx - Improved version with better error handling
 "use client";
 import React, { createContext, useContext, useEffect, useState } from "react";
@@ -262,5 +260,3 @@ export function useAuth() {
   }
   return context;
 }
-
-

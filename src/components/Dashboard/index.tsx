@@ -1,5 +1,3 @@
-
-
 // src/components/Dashboard/index.tsx
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,23 +13,22 @@ import {
   ChevronRight,
   LucideIcon,
   RefreshCw,
-  Database,
+  // Database,
   AlertTriangle,
   Search,
   Download,
-  Bell,
   TrendingUp,
   BarChart3,
 } from "lucide-react";
 import { fetchTenderData } from "@/lib/api";
 import { getAllTendersFromSupabase, storeTenders } from "@/lib/supabase";
 import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+// import {
+//   Tooltip,
+//   TooltipContent,
+//   TooltipProvider,
+//   TooltipTrigger,
+// } from "@/components/ui/tooltip";
 import {
   Select,
   SelectContent,
@@ -39,9 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
-
+// import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface DownloadLink {
   url: string;
@@ -75,9 +70,6 @@ interface TenderDataMap {
 
 const ITEMS_PER_PAGE = 10;
 
-
-
-
 const TenderDashboard: React.FC = () => {
   const [tenderData, setTenderData] = useState<TenderDataMap>({});
   const [loading, setLoading] = useState<boolean>(true);
@@ -86,13 +78,6 @@ const TenderDashboard: React.FC = () => {
   const [dataSource, setDataSource] = useState<"live" | "database">("database");
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [lastUpdated, setLastUpdated] = useState<string>("");
-  const [selectedCampus, setSelectedCampus] = useState<string>("rgukt");
-  const [subscriptionEmail, setSubscriptionEmail] = useState<string>("");
-  const [subscribing, setSubscribing] = useState<boolean>(false);
-  const [subscribeMessage, setSubscribeMessage] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortBy, setSortBy] = useState<"posted" | "closing" | "name">("posted");
   const [filterClosingSoon, setFilterClosingSoon] = useState<boolean>(false);
@@ -138,8 +123,7 @@ const TenderDashboard: React.FC = () => {
 
       campuses.forEach((campus) => {
         const campusTenders = tenders.filter(
-          (tender) =>
-            tender.source?.toLowerCase() === campus.name.toLowerCase()
+          (tender) => tender.source?.toLowerCase() === campus.name.toLowerCase()
         );
         groupedTenders[campus.id] = {
           data: campusTenders,
@@ -152,7 +136,7 @@ const TenderDashboard: React.FC = () => {
       setLastUpdated(new Date().toLocaleString());
       return groupedTenders;
     } catch (err) {
-      console.error('Error loading database data:', err);
+      console.error("Error loading database data:", err);
       return {};
     }
   };
@@ -164,7 +148,7 @@ const TenderDashboard: React.FC = () => {
         campuses.map(async (campus) => {
           try {
             const data = await fetchTenderData(campus.id);
-            
+
             if (data?.data) {
               data.data = data.data.map((tender: Tender) => ({
                 ...tender,
@@ -181,13 +165,16 @@ const TenderDashboard: React.FC = () => {
       );
 
       const freshData = Object.fromEntries(results);
-      
+
       // Store fresh data in database (background operation)
       Object.entries(freshData).forEach(async ([campusId, data]) => {
         if (data.data && data.data.length > 0) {
           try {
             // You can uncomment this when you want to store data
-            await storeTenders(data.data, campuses.find(c => c.id === campusId)?.name || campusId);
+            await storeTenders(
+              data.data,
+              campuses.find((c) => c.id === campusId)?.name || campusId
+            );
           } catch (err) {
             console.error(`Error storing data for ${campusId}:`, err);
           }
@@ -196,7 +183,7 @@ const TenderDashboard: React.FC = () => {
 
       return freshData;
     } catch (err) {
-      console.error('Error fetching fresh data:', err);
+      console.error("Error fetching fresh data:", err);
       return {};
     }
   };
@@ -210,11 +197,14 @@ const TenderDashboard: React.FC = () => {
       if (dataSource === "database" && !forceRefresh) {
         // Load from database first
         await loadDatabaseData();
-        
+
         // Fetch fresh data in background
         setTimeout(() => {
           fetchAndStoreData().then((freshData) => {
-            if (Object.keys(freshData).length > 0 && dataSource === "database") {
+            if (
+              Object.keys(freshData).length > 0 &&
+              dataSource === "database"
+            ) {
               // Update UI with fresh data if still on database mode
               // setTenderData(freshData);
             }
@@ -238,63 +228,9 @@ const TenderDashboard: React.FC = () => {
   };
 
 
-
-  const handleSubscribe = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!subscriptionEmail) {
-      setSubscribeMessage({
-        type: "error",
-        message: "Please enter a valid email address",
-      });
-      return;
-    }
-
-    setSubscribing(true);
-    setSubscribeMessage(null);
-
-    try {
-      // Call the actual subscription API endpoint
-      const response = await fetch("/api/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: subscriptionEmail,
-          campus: selectedCampus,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setSubscribeMessage({
-          type: "success",
-          message:
-            data.message ||
-            `Successfully subscribed to ${campuses.find((c) => c.id === selectedCampus)?.name || "all campuses"} notifications!`,
-        });
-
-        setSubscriptionEmail("");
-      } else {
-        setSubscribeMessage({
-          type: "error",
-          message: data.error || "Failed to subscribe. Please try again later.",
-        });
-      }
-    } catch (err) {
-      setSubscribeMessage({
-        type: "error",
-        message: "Failed to subscribe. Please try again later.",
-      });
-      console.error("Subscription error:", err);
-    } finally {
-      setSubscribing(false);
-    }
-  };
-
   useEffect(() => {
     fetchData();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dataSource]);
 
   // Load database data on component mount
@@ -302,7 +238,7 @@ const TenderDashboard: React.FC = () => {
     loadDatabaseData().then(() => {
       setLoading(false);
     });
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleRefresh = () => {
@@ -348,14 +284,14 @@ const TenderDashboard: React.FC = () => {
 
     // Apply search filter
     if (searchQuery) {
-      filtered = filtered.filter(tender =>
+      filtered = filtered.filter((tender) =>
         tender.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
     // Apply closing soon filter
     if (filterClosingSoon) {
-      filtered = filtered.filter(tender => isClosingSoon(tender.closingDate));
+      filtered = filtered.filter((tender) => isClosingSoon(tender.closingDate));
     }
 
     // Apply sorting
@@ -364,10 +300,15 @@ const TenderDashboard: React.FC = () => {
         case "name":
           return a.name.localeCompare(b.name);
         case "closing":
-          return new Date(a.closingDate).getTime() - new Date(b.closingDate).getTime();
+          return (
+            new Date(a.closingDate).getTime() -
+            new Date(b.closingDate).getTime()
+          );
         case "posted":
         default:
-          return new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime();
+          return (
+            new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
+          );
       }
     });
 
@@ -375,15 +316,19 @@ const TenderDashboard: React.FC = () => {
   };
 
   const getTotalStats = () => {
-    const allTenders = Object.values(tenderData).flatMap(data => data.data || []);
-    const closingSoon = allTenders.filter(tender => isClosingSoon(tender.closingDate));
+    const allTenders = Object.values(tenderData).flatMap(
+      (data) => data.data || []
+    );
+    const closingSoon = allTenders.filter((tender) =>
+      isClosingSoon(tender.closingDate)
+    );
     return {
       total: allTenders.length,
       closingSoon: closingSoon.length,
-      activeToday: allTenders.filter(tender => {
+      activeToday: allTenders.filter((tender) => {
         const today = new Date().toDateString();
         return new Date(tender.postedDate).toDateString() === today;
-      }).length
+      }).length,
     };
   };
 
@@ -434,272 +379,108 @@ const TenderDashboard: React.FC = () => {
   const stats = getTotalStats();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 pt-16">
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-        {/* Header Section */}
-        <div className="bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl p-8 md:p-10 mb-10 border border-white/30">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
-            <div className="flex-1">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="p-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl shadow-lg">
-                  <Building2 className="w-8 h-8 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-4xl sm:text-5xl font-black bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 inline-block text-transparent bg-clip-text">
-                    RGUKT Tenders Hub
-                  </h1>
-                  <p className="text-sm text-gray-500 mt-1">Professional Dashboard</p>
-                </div>
-              </div>
-              <p className="text-lg text-gray-700 font-medium leading-relaxed">
-                Comprehensive tender management and analytics across all RGUKT campuses
-              </p>
-              {lastUpdated && (
-                <div className="mt-4 flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-4 py-2 rounded-lg border">
-                  <Clock className="w-4 h-4 text-blue-500" />
-                  <span className="font-medium">Last updated:</span>
-                  <span>{lastUpdated}</span>
-                </div>
-              )}
-            </div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Select
-                  value={dataSource}
-                  onValueChange={(value) =>
-                    setDataSource(value as "live" | "database")
-                  }
-                >
-                  <SelectTrigger className="w-[180px] bg-white/70 border-gray-200 shadow-sm">
-                    <SelectValue placeholder="Data Source" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="database">
-                      <div className="flex items-center gap-2">
-                        <Database className="h-4 w-4 text-blue-600" />
-                        <span>Database (Cached)</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="live">
-                      <div className="flex items-center gap-2">
-                        <Globe className="h-4 w-4 text-green-600" />
-                        <span>Live Data</span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRefresh}
-                  disabled={refreshing}
-                  className="flex items-center gap-2 bg-white/70 hover:bg-white border-gray-200 shadow-sm px-4 py-2"
-                >
-                  {refreshing ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-4 w-4" />
-                  )}
-                  <span className="hidden sm:inline">Refresh Data</span>
-                  <span className="sm:hidden">Refresh</span>
-                </Button>
-              </div>
-            </div>
+        {/* Compact Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">All Tenders</h1>
+            <p className="text-sm text-gray-600">Browse tenders across RGUKT campuses</p>
           </div>
-          <div className="mt-6 flex flex-wrap gap-3">
-            {dataSource === "database" && (
-              <Badge
-                variant="outline"
-                className="bg-blue-50 text-blue-700 border-blue-200 px-4 py-2 text-sm font-medium"
-              >
-                <Database className="w-4 h-4 mr-2" />
-                Cached Data Mode - Faster Loading
-              </Badge>
-            )}
-            {dataSource === "live" && (
-              <Badge
-                variant="outline"
-                className="bg-green-50 text-green-700 border-green-200 px-4 py-2 text-sm font-medium animate-pulse"
-              >
-                <Globe className="w-4 h-4 mr-2" />
-                Live Data Mode - Real-time Updates
-              </Badge>
-            )}
-          </div>
-        </div>
-
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          <Card className="bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 text-white border-0 shadow-2xl transform hover:scale-105 transition-all duration-300">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-blue-100 text-sm font-semibold uppercase tracking-wider">Total Tenders</p>
-                  <p className="text-4xl font-black mt-2">{stats.total}</p>
-                  <p className="text-blue-200 text-xs mt-1">Across all campuses</p>
-                </div>
-                <div className="p-3 bg-white/20 rounded-2xl">
-                  <BarChart3 className="w-8 h-8 text-white" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 text-white border-0 shadow-2xl transform hover:scale-105 transition-all duration-300">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-orange-100 text-sm font-semibold uppercase tracking-wider">Closing Soon</p>
-                  <p className="text-4xl font-black mt-2">{stats.closingSoon}</p>
-                  <p className="text-orange-200 text-xs mt-1">Next 3 days</p>
-                </div>
-                <div className="p-3 bg-white/20 rounded-2xl">
-                  <AlertTriangle className="w-8 h-8 text-white" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 text-white border-0 shadow-2xl transform hover:scale-105 transition-all duration-300">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-green-100 text-sm font-semibold uppercase tracking-wider">New Today</p>
-                  <p className="text-4xl font-black mt-2">{stats.activeToday}</p>
-                  <p className="text-green-200 text-xs mt-1">Posted today</p>
-                </div>
-                <div className="p-3 bg-white/20 rounded-2xl">
-                  <TrendingUp className="w-8 h-8 text-white" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Search and Filter Controls */}
-        <div className="bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl p-6 mb-10 border border-white/30">
-          <div className="flex flex-col gap-6">
-            <div className="flex items-center gap-3">
-              <Search className="w-5 h-5 text-blue-500" />
-              <h2 className="text-xl font-bold text-gray-800">Search & Filter Tenders</h2>
-            </div>
-            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-              <div className="flex flex-col sm:flex-row gap-4 flex-1">
-                <div className="relative flex-1 max-w-md">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search tenders by name or keywords..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-12 pr-4 h-12 w-full rounded-xl border-2 border-gray-200 bg-white shadow-sm text-sm font-medium placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
-                  />
-                </div>
-                <Select value={sortBy} onValueChange={(value: "posted" | "closing" | "name") => setSortBy(value)}>
-                  <SelectTrigger className="w-[200px] h-12 bg-white border-2 border-gray-200 shadow-sm">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="posted">📅 Latest Posted</SelectItem>
-                    <SelectItem value="closing">⏰ Closing Date</SelectItem>
-                    <SelectItem value="name">🔤 Name A-Z</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center gap-3">
-                <Button
-                  variant={filterClosingSoon ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setFilterClosingSoon(!filterClosingSoon)}
-                  className={`flex items-center gap-2 h-12 px-6 rounded-xl font-medium shadow-sm transition-all duration-200 ${
-                    filterClosingSoon 
-                      ? "bg-amber-500 hover:bg-amber-600 text-white shadow-amber-200" 
-                      : "bg-white border-2 border-gray-200 hover:border-amber-300 text-gray-700"
-                  }`}
-                >
-                  <AlertTriangle className="w-4 h-4" />
-                  Closing Soon
-                  {filterClosingSoon && <span className="ml-1 px-2 py-0.5 bg-white/20 rounded-full text-xs">ON</span>}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Subscription Form */}
-        <div className="bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl p-8 mb-10 border border-white/30">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="p-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl shadow-lg">
-              <Bell className="h-7 w-7 text-white" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800">Email Notifications</h2>
-              <p className="text-gray-600 text-sm">Stay updated with new tenders from your preferred campuses</p>
-            </div>
-          </div>
-
-          <form
-            onSubmit={handleSubscribe}
-            className="flex flex-col lg:flex-row gap-4"
-          >
-            <Select value={selectedCampus} onValueChange={setSelectedCampus}>
-              <SelectTrigger className="w-full lg:w-[220px] h-12 bg-white border-2 border-gray-200 shadow-sm">
-                <SelectValue placeholder="Select Campus" />
+          <div className="flex items-center gap-2">
+            <Select
+              value={dataSource}
+              onValueChange={(value) =>
+                setDataSource(value as "live" | "database")
+              }
+            >
+              <SelectTrigger className="w-[140px] h-9 bg-white border-gray-200">
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {campuses.map((campus) => (
-                  <SelectItem key={campus.id} value={campus.id}>
-                    <div className="flex items-center gap-2">
-                      <Building2 className="w-4 h-4 text-blue-500" />
-                      {campus.name}
-                    </div>
-                  </SelectItem>
-                ))}
-                <SelectItem value="all">
-                  <div className="flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-green-500" />
-                    All Campuses
-                  </div>
-                </SelectItem>
+                <SelectItem value="database">Cached</SelectItem>
+                <SelectItem value="live">Live</SelectItem>
               </SelectContent>
             </Select>
-
-            <input
-              type="email"
-              placeholder="Enter your email address for notifications"
-              value={subscriptionEmail}
-              onChange={(e) => setSubscriptionEmail(e.target.value)}
-              className="flex-1 h-12 px-4 rounded-xl border-2 border-gray-200 bg-white shadow-sm text-sm font-medium placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
-            />
-
             <Button
-              type="submit"
-              className="h-12 px-8 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
-              disabled={subscribing}
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="h-9 px-3"
             >
-              {subscribing ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Subscribing...
-                </>
+              {refreshing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <>
-                  <Bell className="mr-2 h-5 w-5" />
-                  Subscribe
-                </>
+                <RefreshCw className="h-4 w-4" />
               )}
             </Button>
-          </form>
-
-          {subscribeMessage && (
-            <Alert
-              className={`mt-3 ${subscribeMessage.type === "success" ? "bg-green-50 text-green-800 border-green-200" : "bg-red-50 text-red-800 border-red-200"}`}
-            >
-              <AlertTitle className="flex items-center gap-2">
-                {subscribeMessage.type === "success" ? "Success" : "Error"}
-              </AlertTitle>
-              <AlertDescription>{subscribeMessage.message}</AlertDescription>
-            </Alert>
-          )}
+          </div>
         </div>
+
+        {/* Compact Stats */}
+        <div className="flex flex-wrap gap-4 mb-6">
+          <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
+            <BarChart3 className="w-4 h-4 text-blue-600" />
+            <span className="text-sm font-medium text-blue-900">{stats.total} Total</span>
+          </div>
+          <div className="flex items-center gap-2 bg-orange-50 px-4 py-2 rounded-lg border border-orange-200">
+            <AlertTriangle className="w-4 h-4 text-orange-600" />
+            <span className="text-sm font-medium text-orange-900">{stats.closingSoon} Closing Soon</span>
+          </div>
+          <div className="flex items-center gap-2 bg-green-50 px-4 py-2 rounded-lg border border-green-200">
+            <TrendingUp className="w-4 h-4 text-green-600" />
+            <span className="text-sm font-medium text-green-900">{stats.activeToday} New Today</span>
+          </div>
+        </div>
+
+        {/* Compact Search & Filter */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search tenders..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-4 h-10 w-full rounded-lg border border-gray-200 bg-white text-sm placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+          <Select
+            value={sortBy}
+            onValueChange={(value: "posted" | "closing" | "name") =>
+              setSortBy(value)
+            }
+          >
+            <SelectTrigger className="w-[140px] h-10 bg-white border-gray-200">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="posted">Latest</SelectItem>
+              <SelectItem value="closing">Closing</SelectItem>
+              <SelectItem value="name">Name</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant={filterClosingSoon ? "default" : "outline"}
+            size="sm"
+            onClick={() => setFilterClosingSoon(!filterClosingSoon)}
+            className={`h-10 px-4 ${
+              filterClosingSoon
+                ? "bg-orange-600 hover:bg-orange-700 text-white"
+                : "border-gray-200 text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            <AlertTriangle className="w-4 h-4 mr-2" />
+            Closing Soon
+            {filterClosingSoon && (
+              <span className="ml-2 px-1.5 py-0.5 bg-white/20 rounded text-xs">
+                ON
+              </span>
+            )}
+          </Button>
+        </div>
+
 
         {loading ? (
           <div className="flex items-center justify-center h-64">
@@ -713,18 +494,17 @@ const TenderDashboard: React.FC = () => {
             defaultValue="rgukt"
             className="space-y-6"
             onValueChange={(value) => {
-              setSelectedCampus(value);
               setCurrentPage(1);
             }}
           >
-            <TabsList className="flex flex-wrap h-auto gap-3 bg-white/90 backdrop-blur-md p-3 rounded-3xl shadow-2xl border border-white/30">
+            <TabsList className="flex flex-wrap h-auto gap-2 bg-white p-2 rounded-lg shadow-lg border border-gray-200">
               {campuses.map((campus) => {
                 const Icon = campus.icon;
                 return (
                   <TabsTrigger
                     key={campus.id}
                     value={campus.id}
-                    className="flex items-center gap-3 px-6 py-4 text-gray-600 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg rounded-2xl transition-all duration-300 hover:bg-gray-50 font-medium"
+                    className="flex items-center gap-2 px-4 py-2 text-gray-600 data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-lg transition-all duration-200 hover:bg-gray-50 font-medium"
                   >
                     <Icon className="w-4 h-4" />
                     <span className="hidden sm:inline">{campus.name}</span>
@@ -734,7 +514,7 @@ const TenderDashboard: React.FC = () => {
                     {tenderData[campus.id]?.data?.length > 0 && (
                       <Badge
                         variant="secondary"
-                        className="bg-white/80 text-gray-700 data-[state=active]:bg-white/20 data-[state=active]:text-white"
+                        className="bg-gray-100 text-gray-700 data-[state=active]:bg-white/20 data-[state=active]:text-white"
                       >
                         {tenderData[campus.id].data.length}
                       </Badge>
@@ -751,140 +531,101 @@ const TenderDashboard: React.FC = () => {
                 className="space-y-6 animate-in fade-in-50 duration-500"
               >
                 {/* Campus Header */}
-                <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl border border-indigo-100">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-indigo-100 rounded-lg">
-                      <campus.icon className="w-5 h-5 text-indigo-600" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-800">{campus.name} Campus</h3>
-                      <p className="text-sm text-gray-600">Active Tenders: {getFilteredAndSortedTenders(tenderData[campus.id]?.data || []).length}</p>
-                    </div>
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <campus.icon className="w-4 h-4 text-blue-600" />
+                    <h3 className="font-medium text-gray-900">{campus.name}</h3>
+                    <span className="text-sm text-gray-500">
+                      ({getFilteredAndSortedTenders(tenderData[campus.id]?.data || []).length} tenders)
+                    </span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Button
-                      onClick={() => window.open(campus.mainSiteUrl, "_blank")}
-                      className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white shadow-lg"
-                    >
-                      <Globe className="w-4 h-4" />
-                      Visit Campus Site
-                    </Button>
-                  </div>
+                  <Button
+                    onClick={() => window.open(campus.mainSiteUrl, "_blank")}
+                    variant="ghost"
+                    size="sm"
+                    className="text-gray-600 hover:text-gray-900"
+                  >
+                    <Globe className="w-4 h-4 mr-1" />
+                    Visit Site
+                  </Button>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-4">
                   {tenderData[campus.id]?.data?.length > 0 ? (
-                    getPaginatedTenders(getFilteredAndSortedTenders(tenderData[campus.id].data)).map(
-                      (tender: Tender, index: number) => (
-                        <Card
-                          key={index}
-                          className={`overflow-hidden bg-white/70 backdrop-blur-sm hover:bg-white/90 border-gray-200 hover:border-blue-300 transition-all duration-300 rounded-2xl hover:shadow-xl transform hover:-translate-y-1 ${
-                            isClosingSoon(tender.closingDate)
-                              ? "border-l-4 border-l-amber-500 shadow-amber-100"
-                              : ""
-                          }`}
-                        >
-                          <CardHeader>
-                            <div className="flex justify-between items-start">
-                              <CardTitle className="text-xl font-semibold leading-relaxed text-gray-800 group-hover:text-blue-600 transition-colors">
-                                {tender.name}
-                              </CardTitle>
-                              {isClosingSoon(tender.closingDate) && (
-                                <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 flex items-center gap-1 shadow-lg animate-pulse">
-                                  <AlertTriangle className="w-3 h-3" />
-                                  Closing Soon
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="flex flex-wrap gap-3 mt-3">
-                              <Badge
-                                variant="outline"
-                                className="flex items-center gap-1 py-1.5 px-3 bg-green-50 text-green-700 border-green-200"
-                              >
-                                <Calendar className="w-4 h-4 flex-shrink-0" />
-                                <span className="font-medium">Posted:</span>
-                                <span className="truncate">
-                                  {formatDate(tender.postedDate)}
-                                </span>
+                    getPaginatedTenders(
+                      getFilteredAndSortedTenders(tenderData[campus.id].data)
+                    ).map((tender: Tender, index: number) => (
+                      <Card
+                        key={index}
+                        className={`border-gray-200 hover:shadow-lg transition-shadow ${
+                          isClosingSoon(tender.closingDate)
+                            ? "border-l-4 border-l-orange-500"
+                            : ""
+                        }`}
+                      >
+                        <CardContent className="p-6">
+                          <div className="flex justify-between items-start mb-4">
+                            <h3 className="text-lg font-semibold text-gray-900 leading-tight flex-1 pr-4">
+                              {tender.name}
+                            </h3>
+                            {isClosingSoon(tender.closingDate) && (
+                              <Badge className="bg-orange-100 text-orange-800 border border-orange-200 flex items-center gap-1">
+                                <AlertTriangle className="w-3 h-3" />
+                                Closing Soon
                               </Badge>
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Badge
-                                      variant="outline"
-                                      className={`flex items-center gap-1 py-1.5 px-3 ${
-                                        isClosingSoon(tender.closingDate)
-                                          ? "bg-amber-50 text-amber-700 border-amber-200"
-                                          : "bg-blue-50 text-blue-700 border-blue-200"
-                                      } cursor-help`}
-                                    >
-                                      <Clock className="w-4 h-4 flex-shrink-0" />
-                                      <span className="font-medium">
-                                        Closes:
-                                      </span>
-                                      <span className="truncate">
-                                        {
-                                          formatClosingDate(tender.closingDate)
-                                            .short
-                                        }
-                                      </span>
-                                    </Badge>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>
-                                      {
-                                        formatClosingDate(tender.closingDate)
-                                          .full
-                                      }
-                                    </p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
+                            )}
+                          </div>
+
+                          <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-4">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-4 h-4" />
+                              <span>Posted: {formatDate(tender.postedDate)}</span>
                             </div>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="flex flex-wrap gap-3">
-                              {tender.downloadLinks.map(
-                                (link: DownloadLink, linkIndex: number) => (
-                                  <Button
-                                    key={linkIndex}
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() =>
-                                      window.open(link.url, "_blank")
-                                    }
-                                    className="flex items-center gap-2 text-blue-600 hover:text-white hover:bg-gradient-to-r hover:from-blue-600 hover:to-indigo-600 border-blue-200 hover:border-blue-300 transition-all duration-300 shadow-md hover:shadow-lg"
-                                  >
-                                    <Download className="w-4 h-4" />
-                                    {link.text}
-                                  </Button>
-                                )
-                              )}
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-4 h-4" />
+                              <span>Closes: {formatClosingDate(tender.closingDate).short}</span>
                             </div>
-                          </CardContent>
-                        </Card>
-                      )
-                    )
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            {tender.downloadLinks.map(
+                              (link: DownloadLink, linkIndex: number) => (
+                                <Button
+                                  key={linkIndex}
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => window.open(link.url, "_blank")}
+                                  className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                                >
+                                  <Download className="w-4 h-4 mr-2" />
+                                  {link.text}
+                                </Button>
+                              )
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
                   ) : (
-                    <Card className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-dashed border-gray-300 rounded-2xl">
-                      <CardHeader className="text-center py-12">
-                        <div className="mx-auto w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
-                          <Building2 className="w-8 h-8 text-gray-400" />
-                        </div>
-                        <p className="text-gray-600 text-lg font-medium">
-                          No active tenders found for {campus.name}
+                    <Card className="border-dashed border-2 border-gray-300">
+                      <CardContent className="text-center py-12">
+                        <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                        <p className="text-gray-600 font-medium">
+                          No tenders found for {campus.name}
                         </p>
-                        <p className="text-gray-500 text-sm mt-1">
-                          {searchQuery && "Try adjusting your search criteria"}
-                          {filterClosingSoon && "No tenders closing soon"}
-                        </p>
-                      </CardHeader>
+                        {(searchQuery || filterClosingSoon) && (
+                          <p className="text-gray-500 text-sm mt-2">
+                            Try adjusting your search or filters
+                          </p>
+                        )}
+                      </CardContent>
                     </Card>
                   )}
                 </div>
 
                 {/* Pagination */}
-                {getFilteredAndSortedTenders(tenderData[campus.id]?.data || []).length > ITEMS_PER_PAGE && (
+                {getFilteredAndSortedTenders(tenderData[campus.id]?.data || [])
+                  .length > ITEMS_PER_PAGE && (
                   <div className="flex justify-center items-center mt-8 space-x-3">
                     <Button
                       variant="outline"
@@ -901,7 +642,11 @@ const TenderDashboard: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-gray-600 bg-white/70 px-3 py-2 rounded-lg border">
                         Page {currentPage} of{" "}
-                        {getTotalPages(getFilteredAndSortedTenders(tenderData[campus.id].data))}
+                        {getTotalPages(
+                          getFilteredAndSortedTenders(
+                            tenderData[campus.id].data
+                          )
+                        )}
                       </span>
                     </div>
                     <Button
@@ -911,13 +656,21 @@ const TenderDashboard: React.FC = () => {
                         setCurrentPage((prev) =>
                           Math.min(
                             prev + 1,
-                            getTotalPages(getFilteredAndSortedTenders(tenderData[campus.id].data))
+                            getTotalPages(
+                              getFilteredAndSortedTenders(
+                                tenderData[campus.id].data
+                              )
+                            )
                           )
                         )
                       }
                       disabled={
                         currentPage ===
-                        getTotalPages(getFilteredAndSortedTenders(tenderData[campus.id].data))
+                        getTotalPages(
+                          getFilteredAndSortedTenders(
+                            tenderData[campus.id].data
+                          )
+                        )
                       }
                       className="flex items-center gap-2 bg-white/70 hover:bg-white border-gray-200 hover:border-blue-300"
                     >
@@ -931,12 +684,9 @@ const TenderDashboard: React.FC = () => {
           </Tabs>
         )}
 
-        {/* Footer */}
-        <div className="mt-12 text-center">
-          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-            <p className="text-gray-700 font-medium">© {new Date().getFullYear()} RGUKT Tenders Hub</p>
-            <p className="mt-2 text-gray-600 text-sm">Data is automatically updated every hour • Built with ❤️ for RGUKT Community</p>
-          </div>
+        {/* Simple Footer */}
+        <div className="mt-8 pt-6 border-t border-gray-200 text-center text-sm text-gray-500">
+          <p>Data updated hourly • © {new Date().getFullYear()} RGUKT Tenders Hub</p>
         </div>
       </div>
     </div>

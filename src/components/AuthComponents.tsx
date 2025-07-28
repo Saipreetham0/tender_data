@@ -60,21 +60,34 @@ export const AuthForm = () => {
     setMessage(null);
 
     try {
-      const { error } = await signInWithGoogle();
+      console.log('Starting Google sign-in...');
+      console.log('Environment check:', {
+        supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+        clientId: process.env.GOOGLE_CLIENT_ID ? 'SET' : 'MISSING',
+        baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL
+      });
+
+      const { data, error } = await signInWithGoogle();
+
+      console.log('Google sign-in result:', { data, error });
 
       if (error) {
-        setMessage({ type: "error", text: error.message });
+        console.error('Google sign-in error:', error);
+        setMessage({ type: "error", text: `Google sign-in failed: ${error.message}` });
         setLoading(false);
+      } else {
+        console.log('Google sign-in initiated successfully');
+        // Don't set loading to false here - user will be redirected
       }
-      // Don't set loading to false here - user will be redirected
     } catch (error: unknown) {
+      console.error('Google sign-in exception:', error);
       const errorMessage =
         error instanceof Error
           ? error.message
           : "Something went wrong. Please try again.";
       setMessage({
         type: "error",
-        text: errorMessage,
+        text: `Error: ${errorMessage}`,
       });
       setLoading(false);
     }

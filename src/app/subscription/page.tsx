@@ -1,11 +1,16 @@
 "use client";
+import Navbar from "@/components/NavBar";
 import SubscriptionManager from "@/components/subscription/SubscriptionManager";
 
 export default function SubscriptionPage() {
-  // return <SubscriptionManager />;
   return (
-    <div className="mx-4 sm:mx-8 md:mx-16 lg:mx-32 my-10">
-      <SubscriptionManager />
-    </div>
+    <>
+      <Navbar />
+      <div className="min-h-screen bg-gray-50">
+        <div className="pt-16">
+          <SubscriptionManager />
+        </div>
+      </div>
+    </>
   );
 }

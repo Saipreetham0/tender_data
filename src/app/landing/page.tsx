@@ -1,6 +1,7 @@
 // src/app/landing/page.tsx
 "use client";
 
+import Navbar from "@/components/NavBar";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -186,6 +187,7 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      <Navbar />
       {/* Navigation */}
       {/* <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${

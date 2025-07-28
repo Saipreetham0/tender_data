@@ -49,15 +49,23 @@ const SubscriptionManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState("plans");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
 
   const fetchData = React.useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Fetch plans
-      const plansResponse = await fetch("/api/subscription/plans");
+      // Add timeout to prevent infinite loading
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Request timeout')), 10000)
+      );
+
+      // Fetch plans from database with timeout
+      const plansPromise = fetch("/api/subscription/plans");
+      const plansResponse = await Promise.race([plansPromise, timeoutPromise]) as Response;
       const plansData = await plansResponse.json();
+      
       if (plansData.success) {
         setPlans(
           plansData.plans.sort(
@@ -90,19 +98,29 @@ const SubscriptionManager: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching data:", error);
-      setError("Failed to load subscription data. Please try again.");
+      setError(error instanceof Error ? error.message : "Failed to load subscription data. Please try again.");
     } finally {
       setLoading(false);
     }
   }, [user?.email]);
 
   useEffect(() => {
-    if (user?.email) {
-      fetchData();
-    } else {
-      setLoading(false);
+    // Always fetch plans (pricing is public), but only fetch user data if authenticated
+    fetchData();
+  }, [fetchData]);
+
+  // Separate timeout effect
+  useEffect(() => {
+    if (loading) {
+      const loadingTimer = setTimeout(() => {
+        setLoadingTimeout(true);
+        setError("Loading is taking longer than expected. Please try refreshing the page.");
+        setLoading(false);
+      }, 15000); // 15 second timeout
+
+      return () => clearTimeout(loadingTimer);
     }
-  }, [user, fetchData]);
+  }, [loading]);
 
   const handleSubscribe = async (planId: string) => {
     if (!user?.email) {
@@ -168,10 +186,18 @@ const SubscriptionManager: React.FC = () => {
             const verifyData = await verifyResponse.json();
 
             if (verifyData.success) {
+              // Use the actual subscription end date from the API response
+              const expiryDate = verifyData.subscription?.ends_at || verifyData.subscription?.current_period_end;
+              const formattedExpiryDate = expiryDate 
+                ? new Date(expiryDate).toLocaleDateString('en-IN', {
+                    year: 'numeric',
+                    month: 'long', 
+                    day: 'numeric'
+                  })
+                : 'subscription period';
+              
               setSuccess(
-                `Payment successful! Your ${billingCycle} subscription is now active and will expire on ${new Date(
-                  Date.now() + (billingCycle === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000
-                ).toLocaleDateString()}.`
+                `Payment successful! Your ${billingCycle} subscription is now active and will expire on ${formattedExpiryDate}.`
               );
               await fetchData();
               setActiveTab("current");
@@ -232,7 +258,7 @@ const SubscriptionManager: React.FC = () => {
     const confirmMessage = `Are you sure you want to cancel your subscription?
 
 ⚠️ Important: This is a one-time payment subscription.
-• You will continue to have access until ${new Date(currentSubscription.current_period_end || currentSubscription.next_billing_at).toLocaleDateString()}
+• You will continue to have access until ${new Date(currentSubscription.ends_at || currentSubscription.current_period_end || currentSubscription.next_billing_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
 • No automatic renewal will occur
 • You will need to manually renew when it expires
 
@@ -293,58 +319,53 @@ This action cannot be undone.`;
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6">
-      {/* Header */}
-      <div className="text-center mb-12">
-        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-          Choose Your Perfect Plan
-        </h1>
-        <p className="text-lg sm:text-xl text-gray-600 mb-4">
-          Get instant access to all RGUKT tenders with advanced features
-        </p>
+    <div className="max-w-4xl mx-auto">
+      {/* Info Badge */}
+      <div className="text-center mb-8">
         <div className="inline-flex items-center px-4 py-2 bg-blue-50 text-blue-800 rounded-lg text-sm">
           <CheckCircle className="h-4 w-4 mr-2" />
-          One-time payment • No auto-renewal • Clear expiry dates
+          One-time payment • No auto-renewal
         </div>
-
-        {/* Alerts */}
-        {error && (
-          <Alert className="mb-6 mt-6 border-red-200 bg-red-50">
-            <AlertCircle className="h-4 w-4 text-red-600" />
-            <AlertDescription className="text-red-800">
-              {error}
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {success && (
-          <Alert className="mb-6 mt-6 border-green-200 bg-green-50">
-            <CheckCircle className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-800">
-              {success}
-            </AlertDescription>
-          </Alert>
-        )}
       </div>
 
-      <Tabs
-        value={activeTab}
-        onValueChange={setActiveTab}
-        className="space-y-8"
-      >
+      {/* Alerts */}
+      {error && (
+        <Alert className="mb-6 border-red-200 bg-red-50">
+          <AlertCircle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-800">
+            {error}
+            {loadingTimeout && (
+              <button
+                onClick={() => {
+                  setError(null);
+                  setLoadingTimeout(false);
+                  fetchData();
+                }}
+                className="ml-4 px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+              >
+                Retry
+              </button>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {success && (
+        <Alert className="mb-6 border-green-200 bg-green-50">
+          <CheckCircle className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-800">
+            {success}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="plans" data-value="plans">
-            Subscription Plans
-          </TabsTrigger>
-          <TabsTrigger value="current" data-value="current">
-            My Subscription
-          </TabsTrigger>
-          <TabsTrigger value="faq" data-value="faq">
-            FAQ & Support
-          </TabsTrigger>
+          <TabsTrigger value="plans">Plans</TabsTrigger>
+          <TabsTrigger value="current">My Subscription</TabsTrigger>
+          <TabsTrigger value="faq">FAQ</TabsTrigger>
         </TabsList>
 
-        {/* Plans Tab */}
         <TabsContent value="plans">
           <PlansTab
             plans={plans}
@@ -358,7 +379,6 @@ This action cannot be undone.`;
           />
         </TabsContent>
 
-        {/* Current Subscription Tab */}
         <TabsContent value="current">
           <CurrentSubscriptionTab
             currentSubscription={currentSubscription}
@@ -370,7 +390,6 @@ This action cannot be undone.`;
           />
         </TabsContent>
 
-        {/* FAQ Tab */}
         <TabsContent value="faq">
           <FAQTab />
         </TabsContent>

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { User, Mail, Building, Phone, Save, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthGuard } from '@/components/AuthComponents';
+import DashboardLayout from '@/components/Dashboard/DashboardLayout';
 
 const ProfilePage = () => {
   const { user, updateProfile } = useAuth();
@@ -41,9 +42,11 @@ const ProfilePage = () => {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-gray-50 py-8">
-
-        <div className="max-w-2xl mx-auto px-4 mt-24">
+      <DashboardLayout
+        title="Profile Settings"
+        subtitle="Manage your account information and preferences"
+      >
+        <div className="max-w-2xl mx-auto">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -152,7 +155,7 @@ const ProfilePage = () => {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </DashboardLayout>
     </AuthGuard>
   );
 };
