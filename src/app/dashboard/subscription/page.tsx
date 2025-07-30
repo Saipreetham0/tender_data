@@ -192,7 +192,7 @@ export default function DashboardSubscriptionPage() {
   };
 
   // Format date with better error handling
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | Date) => {
     if (!dateString) {
       return 'Not specified';
     }

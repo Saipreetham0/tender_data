@@ -258,7 +258,7 @@ const SubscriptionManager: React.FC = () => {
     const confirmMessage = `Are you sure you want to cancel your subscription?
 
 ⚠️ Important: This is a one-time payment subscription.
-• You will continue to have access until ${new Date(currentSubscription.ends_at || currentSubscription.current_period_end || currentSubscription.next_billing_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
+• You will continue to have access until ${new Date(currentSubscription.current_period_end || currentSubscription.next_billing_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
 • No automatic renewal will occur
 • You will need to manually renew when it expires
 

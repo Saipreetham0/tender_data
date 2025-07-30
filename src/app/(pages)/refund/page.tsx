@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Refund Policy - RGUKT Tenders Portal",
+  description: "Refund and cancellation policy for RGUKT Tenders Portal subscriptions and services.",
+};
+
 export default function RefundPage() {
   return (
     <div>

@@ -1,7 +1,9 @@
-// src/middleware.ts - Production-ready middleware with security and rate limiting
+// src/middleware.ts - Simplified production-ready middleware
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { RateLimiter, getClientIP } from "./lib/auth-jwt";
+
+// Simple in-memory rate limiting (for basic protection)
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
 // Rate limiting configuration
 const RATE_LIMITS = {
@@ -11,6 +13,49 @@ const RATE_LIMITS = {
   '/api/tenders/': { windowMs: 60000, maxRequests: 30 }, // 30 requests per minute for tenders
   '/api/': { windowMs: 60000, maxRequests: 100 }, // 100 requests per minute for other APIs
 };
+
+function getClientIP(request: NextRequest): string {
+  const forwarded = request.headers.get("x-forwarded-for");
+  const realIP = request.headers.get("x-real-ip");
+  
+  if (forwarded) {
+    return forwarded.split(',')[0].trim();
+  }
+  
+  if (realIP) {
+    return realIP;
+  }
+  
+  return 'unknown';
+}
+
+function checkRateLimit(clientIP: string, windowMs: number, maxRequests: number): { allowed: boolean; remaining: number; resetTime: number } {
+  const now = Date.now();
+  const key = clientIP;
+  const windowStart = now - windowMs;
+  
+  // Clean up old entries
+  for (const [k, v] of rateLimitMap.entries()) {
+    if (v.resetTime < now) {
+      rateLimitMap.delete(k);
+    }
+  }
+  
+  const current = rateLimitMap.get(key);
+  
+  if (!current || current.resetTime < now) {
+    // First request or window expired
+    rateLimitMap.set(key, { count: 1, resetTime: now + windowMs });
+    return { allowed: true, remaining: maxRequests - 1, resetTime: now + windowMs };
+  }
+  
+  if (current.count >= maxRequests) {
+    return { allowed: false, remaining: 0, resetTime: current.resetTime };
+  }
+  
+  current.count++;
+  return { allowed: true, remaining: maxRequests - current.count, resetTime: current.resetTime };
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -37,11 +82,7 @@ export async function middleware(request: NextRequest) {
     const rateLimit = rateLimitKey ? RATE_LIMITS[rateLimitKey as keyof typeof RATE_LIMITS] : RATE_LIMITS['/api/'];
     
     try {
-      const result = await RateLimiter.checkLimit(
-        `${clientIP}:${rateLimitKey || 'api'}`,
-        rateLimit.windowMs,
-        rateLimit.maxRequests
-      );
+      const result = checkRateLimit(clientIP, rateLimit.windowMs, rateLimit.maxRequests);
       
       if (!result.allowed) {
         return NextResponse.json(
@@ -90,7 +131,7 @@ function getAllowedOrigin(request: NextRequest): string {
   const origin = request.headers.get('origin');
   const allowedOrigins = [
     process.env.NEXT_PUBLIC_API_BASE_URL,
-    'https://tender-data.vercel.app',
+    'https://tendernotify.site',
     'https://localhost:3000',
   ].filter(Boolean);
   

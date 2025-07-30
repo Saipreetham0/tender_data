@@ -39,7 +39,7 @@
 
 // src/app/layout.tsx - Updated with Auth Provider
 import "./globals.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { AuthProvider } from "@/contexts/AuthContext";
 
@@ -47,6 +47,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://tendernotify.site'),
   title: "RGUKT Tenders Portal - Government Tender Notifications & Procurement",
   description:
     "Get real-time tender notifications from RGUKT campuses. Track government procurement opportunities, construction tenders, and supply contracts with email subscriptions and analytics.",
@@ -79,8 +80,12 @@ export const metadata: Metadata = {
     description: "Get real-time tender notifications from RGUKT campuses. Track government procurement opportunities.",
     images: ["/og-image.jpg"],
   },
-  viewport: "width=device-width, initial-scale=1",
-  themeColor: "#1f2937",
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#1f2937',
 };
 
 // Initialize database tables on app start (server-side only)
