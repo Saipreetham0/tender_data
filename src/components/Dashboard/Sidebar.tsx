@@ -1,21 +1,21 @@
 // src/components/Dashboard/Sidebar.tsx
 "use client";
-import React, { useState } from 'react';
+import React from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   Building2,
   User,
-  Settings,
+  // Settings,
   CreditCard,
-  Search,
-  Download,
+  // Search,
+  // Download,
   ChevronLeft,
   ChevronRight,
-  Menu,
+  // Menu,
   X,
   Calendar,
-  Mail,
+  // Mail,
   LogOut
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -63,24 +63,24 @@ const Sidebar: React.FC<SidebarProps> = ({
       badge: '125',
       isActive: pathname.startsWith('/dashboard/tenders')
     },
-    {
-      icon: Search,
-      label: 'Search & Filter',
-      href: '/dashboard/search',
-      isActive: pathname.startsWith('/dashboard/search')
-    },
-    {
-      icon: Calendar,
-      label: 'Tender Calendar',
-      href: '/dashboard/calendar',
-      isActive: pathname.startsWith('/dashboard/calendar')
-    },
-    {
-      icon: Download,
-      label: 'Downloads',
-      href: '/dashboard/downloads',
-      isActive: pathname.startsWith('/dashboard/downloads')
-    },
+    // {
+    //   icon: Search,
+    //   label: 'Search & Filter',
+    //   href: '/dashboard/search',
+    //   isActive: pathname.startsWith('/dashboard/search')
+    // },
+    // {
+    //   icon: Calendar,
+    //   label: 'Tender Calendar',
+    //   href: '/dashboard/calendar',
+    //   isActive: pathname.startsWith('/dashboard/calendar')
+    // },
+    // {
+    //   icon: Download,
+    //   label: 'Downloads',
+    //   href: '/dashboard/downloads',
+    //   isActive: pathname.startsWith('/dashboard/downloads')
+    // },
     {
       icon: CreditCard,
       label: 'Subscription',
@@ -183,11 +183,11 @@ const Sidebar: React.FC<SidebarProps> = ({
                   <span className="text-sm font-medium">{item.label}</span>
                   <div className="ml-auto flex items-center gap-1">
                     {item.badge && (
-                      <Badge 
-                        variant="secondary" 
+                      <Badge
+                        variant="secondary"
                         className={`text-xs px-1.5 py-0.5 ${
-                          item.isActive 
-                            ? 'bg-white/20 text-white border-white/20' 
+                          item.isActive
+                            ? 'bg-white/20 text-white border-white/20'
                             : 'bg-blue-100 text-blue-700 border-blue-200'
                         }`}
                       >
@@ -275,7 +275,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     <>
       {/* Mobile Overlay */}
       {isMobileOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={onCloseMobile}
         />
