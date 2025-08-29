@@ -4,7 +4,7 @@ import { supabase } from '@/lib/auth';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const admin = await requireAdmin(request);
@@ -13,7 +13,7 @@ export async function PATCH(
     }
 
     const { action } = await request.json();
-    const userId = params.id;
+    const { id: userId } = await params;
 
     let result;
     let activityAction = '';

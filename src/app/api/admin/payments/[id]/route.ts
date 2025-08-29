@@ -4,7 +4,7 @@ import { supabase } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const admin = await requireAdmin(request);
@@ -12,7 +12,7 @@ export async function GET(
       return admin;
     }
 
-    const paymentId = params.id;
+    const { id: paymentId } = await params;
 
     // Fetch payment details with user information
     const { data: payment, error } = await supabase
@@ -67,7 +67,7 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const admin = await requireAdmin(request);
@@ -75,7 +75,7 @@ export async function PATCH(
       return admin;
     }
 
-    const paymentId = params.id;
+    const { id: paymentId } = await params;
     const { action, reason } = await request.json();
 
     let updateData: any = {};

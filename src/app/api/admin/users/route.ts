@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
         created_at: user.created_at,
         last_sign_in_at: user.last_sign_in_at,
         email_confirmed_at: user.email_confirmed_at,
-        banned_until: user.banned_until
+        banned_until: (user as any).banned_until
       }))
     });
 

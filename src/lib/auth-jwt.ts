@@ -45,7 +45,7 @@ export class AuthError extends Error {
 }
 
 export class AuthService {
-  private static readonly TOKEN_EXPIRY = '24h';
+  private static readonly TOKEN_EXPIRY = '2d';
   private static readonly REFRESH_TOKEN_EXPIRY = '7d';
 
   static async hashPassword(password: string): Promise<string> {

@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
       const name = user.user_metadata?.name || user.user_metadata?.full_name || '';
       const isActive = user.last_sign_in_at && 
         new Date(user.last_sign_in_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      const isBanned = user.banned_until && new Date(user.banned_until) > new Date();
+      const isBanned = (user as any).banned_until && new Date((user as any).banned_until) > new Date();
       
       const status = isBanned ? 'Banned' : isActive ? 'Active' : 'Inactive';
 

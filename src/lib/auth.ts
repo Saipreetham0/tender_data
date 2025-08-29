@@ -27,6 +27,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: true,
   },
+  global: {
+    headers: {
+      'X-Client-Info': 'tender-data-app',
+    },
+  },
 });
 
 export interface UserProfile {

@@ -82,8 +82,9 @@ export default function AdminUsersPage() {
 
       // Fetch subscriptions
       const subscriptionsResponse = await fetch('/api/admin/subscriptions');
+      let subscriptionsData: any = null;
       if (subscriptionsResponse.ok) {
-        const subscriptionsData = await subscriptionsResponse.json();
+        subscriptionsData = await subscriptionsResponse.json();
         setSubscriptions(subscriptionsData.subscriptions || []);
       }
 

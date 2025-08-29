@@ -3,7 +3,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { AuthError, Provider, Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/auth";
-import { useAutoLogout } from "@/hooks/useAutoLogout";
 
 export interface UserProfile {
   id: string;
@@ -59,18 +58,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // Auto logout hook with custom logout handler
-  const { startMonitoring, stopMonitoring } = useAutoLogout({
-    onLogout: async () => {
-      await signOut();
-    },
-    onWarning: (timeLeft: number) => {
-      const minutesLeft = Math.ceil(timeLeft / 60000);
-      console.warn(`Session will expire in ${minutesLeft} minutes`);
-      // You can show a toast notification here if desired
-    }
-  });
 
   const loadUserProfile = async (authUser: User) => {
     try {
@@ -163,7 +150,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    getInitialSession();
+    // Add timeout fallback to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      console.warn('Auth initialization taking too long, setting loading to false');
+      setLoading(false);
+    }, 10000); // 10 second timeout
+
+    getInitialSession().finally(() => {
+      clearTimeout(timeoutId);
+    });
 
     // Listen for auth changes
     const {
@@ -173,12 +168,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (session?.user) {
         await loadUserProfile(session.user);
-        // Start auto logout monitoring when user is authenticated
-        startMonitoring();
       } else {
         setUser(null);
-        // Stop monitoring when user is logged out
-        stopMonitoring();
       }
       setLoading(false);
     });
@@ -207,7 +198,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    stopMonitoring(); // Stop auto logout monitoring
     await supabase.auth.signOut();
     setUser(null);
   };

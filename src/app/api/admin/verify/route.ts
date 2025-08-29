@@ -12,24 +12,9 @@ export async function GET(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         auth: {
-          getSession: async () => {
-            const accessToken = cookieStore.get('sb-access-token')?.value;
-            const refreshToken = cookieStore.get('sb-refresh-token')?.value;
-            
-            if (!accessToken) {
-              return { data: { session: null }, error: null };
-            }
-
-            try {
-              const { data, error } = await supabase.auth.setSession({
-                access_token: accessToken,
-                refresh_token: refreshToken || ''
-              });
-              return { data, error };
-            } catch (e) {
-              return { data: { session: null }, error: null };
-            }
-          }
+          autoRefreshToken: false,
+          persistSession: false,
+          detectSessionInUrl: false
         }
       }
     );

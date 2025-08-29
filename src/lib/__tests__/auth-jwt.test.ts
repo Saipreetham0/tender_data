@@ -49,7 +49,7 @@ describe('AuthService', () => {
         payload,
         process.env.JWT_SECRET,
         expect.objectContaining({
-          expiresIn: '24h',
+          expiresIn: '2d',
           issuer: 'tender-data-app',
           audience: 'tender-data-users',
         })
