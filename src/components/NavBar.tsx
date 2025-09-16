@@ -16,14 +16,16 @@ import {
   Sun,
   CreditCard,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { SimpleAuth } from "@/components/SimpleAuth";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 
-// Import your actual auth context and subscription hook
-import { useAuth } from "@/contexts/AuthContext";
-import { useRazorpayPayment } from "@/hooks/useRazorpayPayment";
+// Import optimized auth and subscription hooks
+import { useOptimizedAuthContext } from "@/contexts/OptimizedAuthContext";
+import { useSubscriptionData } from "@/hooks/useSubscriptionData";
+import { NavbarSubscriptionStatus, QuickSubscriptionAction } from "@/components/NavbarSubscriptionStatus";
+import { useFastAuth } from "@/lib/fast-auth";
 
 // Avatar component with enhanced functionality for Google OAuth and Magic Link users
 interface User {
@@ -183,9 +185,17 @@ const Navbar = () => {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Use the actual auth context and subscription hook
-  const { user, loading, signOut } = useAuth();
-  const { currentSubscription, loading: subscriptionLoading } = useRazorpayPayment();
+  // Use fast auth for instant UI, then hydrate with full auth
+  const fastAuth = useFastAuth();
+  const { user, isLoading: authLoading, authState, hasFeature, signOut } = useOptimizedAuthContext();
+  const { subscription, isLoading: subscriptionLoading } = useSubscriptionData();
+
+  // Determine what to show: fast auth first, then real auth when loaded
+  const effectiveUser = user || (fastAuth.user && !fastAuth.loading ? fastAuth.user : null);
+  const effectiveLoading = fastAuth.loading || (authLoading && !user && !fastAuth.user);
+
+  // Show loading only if both fast auth and real auth are loading
+  const showLoadingState = effectiveLoading;
 
   // Handle scroll effect
   useEffect(() => {
@@ -392,7 +402,7 @@ const Navbar = () => {
             </button>
 
             {/* User Menu or Auth Buttons */}
-            {loading ? (
+            {showLoadingState ? (
               <div className="flex items-center space-x-3">
                 <LoadingAvatar size="sm" />
                 <div className="hidden sm:block">
@@ -400,26 +410,22 @@ const Navbar = () => {
                   <div className="h-3 bg-gray-200 rounded animate-pulse w-16"></div>
                 </div>
               </div>
-            ) : user ? (
+            ) : effectiveUser ? (
               <div className="relative" data-user-menu>
                 <button
                   onClick={handleUserMenuClick}
                   className="flex items-center space-x-3 p-1 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
                 >
-                  <UserAvatar user={user} size="sm" />
+                  <UserAvatar user={effectiveUser} size="sm" />
 
                   <div className="hidden sm:block text-left">
                     <p className="text-sm font-medium text-gray-700 max-w-32 truncate group-hover:text-blue-600 transition-colors">
-                      {user.profile?.full_name || user.email?.split("@")[0]}
+                      {effectiveUser.profile?.full_name || effectiveUser.name || effectiveUser.email?.split("@")[0]}
                     </p>
-                    {!subscriptionLoading && currentSubscription && currentSubscription.status === "active" && (
-                      <div className="flex items-center space-x-1">
-                        <Crown className="h-3 w-3 text-yellow-500" />
-                        <span className="text-xs text-gray-500">
-                          {currentSubscription.plan?.name}
-                        </span>
-                      </div>
-                    )}
+                    <NavbarSubscriptionStatus
+                      compact={true}
+                      onUpgradeClick={handleSubscriptionClick}
+                    />
                   </div>
 
                   <ChevronDown
@@ -435,43 +441,34 @@ const Navbar = () => {
                     {/* User Info Header */}
                     <div className="px-4 py-3 border-b border-gray-100">
                       <div className="flex items-center space-x-3">
-                        <UserAvatar user={user} size="lg" />
+                        <UserAvatar user={effectiveUser} size="lg" />
 
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-gray-900 truncate">
-                            {user.profile?.full_name || "User"}
+                            {effectiveUser.profile?.full_name || effectiveUser.name || "User"}
                           </p>
                           <p className="text-sm text-gray-500 truncate">
-                            {user.email}
+                            {effectiveUser.email}
                           </p>
-                          {user.profile?.organization && (
+                          {effectiveUser.profile?.organization && (
                             <p className="text-xs text-gray-400 truncate">
-                              {user.profile.organization}
+                              {effectiveUser.profile.organization}
                             </p>
                           )}
                         </div>
                       </div>
 
                       {/* Subscription Status */}
-                      {!subscriptionLoading && (
-                        <div className="mt-3">
-                          {currentSubscription && currentSubscription.status === "active" ? (
-                            <div className="flex items-center justify-between">
-                              <Badge className="bg-green-100 text-green-800 border-green-200 flex items-center space-x-1">
-                                <Crown className="h-3 w-3" />
-                                <span>{currentSubscription.plan?.name} Plan</span>
-                              </Badge>
-                              <span className="text-xs text-green-600 font-medium">
-                                Active
-                              </span>
-                            </div>
-                          ) : (
-                            <Badge className="bg-gray-100 text-gray-800 border-gray-200">
-                              Free Plan
-                            </Badge>
-                          )}
-                        </div>
-                      )}
+                      <div className="mt-3">
+                        <NavbarSubscriptionStatus
+                          onUpgradeClick={handleSubscriptionClick}
+                        />
+                      </div>
+
+                      {/* Quick Action */}
+                      <div className="mt-2">
+                        <QuickSubscriptionAction />
+                      </div>
                     </div>
 
                     {/* Menu Items */}
@@ -522,23 +519,10 @@ const Navbar = () => {
                 )}
               </div>
             ) : (
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleNavigation("/login")}
-                  className="hover:bg-blue-50 hover:text-blue-600"
-                >
-                  Sign In
-                </Button>
-                <Button
-                  size="sm"
-                  className="bg-blue-600 hover:bg-blue-700 shadow-sm"
-                  onClick={() => handleNavigation("/subscription")}
-                >
-                  Get Started
-                </Button>
-              </div>
+              <SimpleAuth
+                onSignIn={() => handleNavigation("/login")}
+                onGetStarted={() => handleNavigation("/subscription")}
+              />
             )}
 
             {/* Mobile Menu Button */}
@@ -580,16 +564,16 @@ const Navbar = () => {
             })}
 
             {/* Mobile User Actions */}
-            {user ? (
+            {effectiveUser ? (
               <div className="border-t border-gray-200 pt-4 mt-4">
                 <div className="px-2 pb-3">
                   <div className="flex items-center space-x-3">
-                    <UserAvatar user={user} size="md" />
+                    <UserAvatar user={effectiveUser} size="md" />
                     <div>
                       <p className="font-medium text-gray-900">
-                        {user.profile?.full_name || "User"}
+                        {effectiveUser.profile?.full_name || effectiveUser.name || "User"}
                       </p>
-                      <p className="text-sm text-gray-500">{user.email}</p>
+                      <p className="text-sm text-gray-500">{effectiveUser.email}</p>
                     </div>
                   </div>
                 </div>
@@ -620,19 +604,12 @@ const Navbar = () => {
               </div>
             ) : (
               <div className="border-t border-gray-200 pt-4 mt-4 space-y-2">
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start hover:bg-blue-50 hover:text-blue-600"
-                  onClick={() => handleNavigation("/login")}
-                >
-                  Sign In
-                </Button>
-                <Button
-                  className="w-full bg-blue-600 hover:bg-blue-700"
-                  onClick={() => handleNavigation("/subscription")}
-                >
-                  Get Started
-                </Button>
+                <div className="flex flex-col space-y-2">
+                  <SimpleAuth
+                    onSignIn={() => handleNavigation("/login")}
+                    onGetStarted={() => handleNavigation("/subscription")}
+                  />
+                </div>
               </div>
             )}
           </div>

@@ -5,6 +5,81 @@ import { monitoring } from '@/lib/monitoring';
 import { logger } from '@/lib/logger';
 import { createClient } from '@supabase/supabase-js';
 
+/**
+ * @swagger
+ * /api/admin/health:
+ *   get:
+ *     tags:
+ *       - Admin Health
+ *     summary: Get comprehensive system health status
+ *     description: Returns detailed system health information including database connectivity, service status, subscription statistics, and performance metrics
+ *     security:
+ *       - AdminApiKey: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         schema:
+ *           type: string
+ *         description: Admin API key (alternative to header authentication)
+ *     responses:
+ *       200:
+ *         description: System health status retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   allOf:
+ *                     - $ref: '#/components/schemas/SystemHealth'
+ *                     - type: object
+ *                       properties:
+ *                         subscriptions:
+ *                           type: object
+ *                           properties:
+ *                             total:
+ *                               type: integer
+ *                               example: 150
+ *                             active:
+ *                               type: integer
+ *                               example: 125
+ *                             free:
+ *                               type: integer
+ *                               example: 80
+ *                             basic:
+ *                               type: integer
+ *                               example: 30
+ *                             premium:
+ *                               type: integer
+ *                               example: 15
+ *                         requestCount:
+ *                           type: integer
+ *                           example: 1542
+ *                         responseTime:
+ *                           type: number
+ *                           format: float
+ *                           example: 45.2
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *                   example: '2025-01-13T10:30:00.000Z'
+ *       401:
+ *         description: Authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 export async function GET(request: NextRequest) {
   const startTime = Date.now();
   

@@ -26,14 +26,20 @@ import { useAuth } from '@/contexts/AuthContext';
 interface User {
   id: string;
   email: string;
-  user_metadata: {
-    name?: string;
-    full_name?: string;
-  };
+  full_name?: string;
+  avatar_url?: string;
+  organization?: string;
+  phone?: string;
+  preferences?: any;
   created_at: string;
+  updated_at?: string;
   last_sign_in_at: string | null;
   email_confirmed_at: string | null;
   banned_until: string | null;
+  user_metadata?: {
+    name?: string;
+    full_name?: string;
+  };
 }
 
 interface UserSubscription {
@@ -72,10 +78,11 @@ export default function AdminUsersPage() {
       setLoading(true);
       setError(null);
 
-      // Fetch users
+      // Fetch users with simple approach
       const usersResponse = await fetch('/api/admin/users');
       if (!usersResponse.ok) {
-        throw new Error('Failed to fetch users');
+        const errorData = await usersResponse.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to fetch users');
       }
       const usersData = await usersResponse.json();
       setUsers(usersData.users || []);
@@ -167,7 +174,7 @@ export default function AdminUsersPage() {
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (user.user_metadata?.name || user.user_metadata?.full_name || '').toLowerCase().includes(searchTerm.toLowerCase());
+                         (user.full_name || user.user_metadata?.name || user.user_metadata?.full_name || '').toLowerCase().includes(searchTerm.toLowerCase());
     
     if (filterStatus === 'all') return matchesSearch;
     if (filterStatus === 'active') return matchesSearch && user.last_sign_in_at && new Date(user.last_sign_in_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -340,16 +347,28 @@ export default function AdminUsersPage() {
                       return (
                         <tr key={user.id} className="border-b hover:bg-gray-50">
                           <td className="py-4 px-4">
-                            <div>
-                              <p className="font-medium text-gray-900">
-                                {user.user_metadata?.name || user.user_metadata?.full_name || 'Unknown'}
-                              </p>
-                              <p className="text-sm text-gray-600">{user.email}</p>
-                              {!user.email_confirmed_at && (
-                                <Badge variant="secondary" className="text-xs mt-1">
-                                  Unconfirmed
-                                </Badge>
+                            <div className="flex items-center space-x-3">
+                              {user.avatar_url && (
+                                <img
+                                  src={user.avatar_url}
+                                  alt={user.full_name || 'User'}
+                                  className="h-10 w-10 rounded-full"
+                                />
                               )}
+                              <div>
+                                <p className="font-medium text-gray-900">
+                                  {user.full_name || user.user_metadata?.name || user.user_metadata?.full_name || 'Unknown'}
+                                </p>
+                                <p className="text-sm text-gray-600">{user.email}</p>
+                                {user.organization && (
+                                  <p className="text-xs text-gray-500">{user.organization}</p>
+                                )}
+                                {!user.email_confirmed_at && (
+                                  <Badge variant="secondary" className="text-xs mt-1">
+                                    Unconfirmed
+                                  </Badge>
+                                )}
+                              </div>
                             </div>
                           </td>
                           <td className="py-4 px-4">

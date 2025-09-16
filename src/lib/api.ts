@@ -6,6 +6,17 @@ export async function fetchTenderData(campus: string) {
       });
 
       if (!response.ok) {
+        // Handle 503 Service Unavailable specifically (disabled routes)
+        if (response.status === 503) {
+          console.warn(`${campus} tender route is temporarily disabled`);
+          return {
+            success: false,
+            data: [],
+            source: campus,
+            disabled: true,
+            message: `${campus} tender route is temporarily disabled`
+          };
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
@@ -13,6 +24,11 @@ export async function fetchTenderData(campus: string) {
       return data;
     } catch (error) {
       console.error(`Error fetching ${campus} tenders:`, error);
-      return { success: false, data: [], source: campus };
+      return {
+        success: false,
+        data: [],
+        source: campus,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
     }
   }

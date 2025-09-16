@@ -120,9 +120,8 @@
 
 
 // src/hooks/useSubscriptionAccess.ts
-import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import type { UserSubscription } from "@/types/subscription";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 
 interface UseSubscriptionAccessReturn {
   hasAccess: (feature: string) => boolean;
@@ -135,70 +134,10 @@ interface UseSubscriptionAccessReturn {
 
 export function useSubscriptionAccess(): UseSubscriptionAccessReturn {
   const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [subscription, setSubscription] = useState<UserSubscription | null>(
-    null
-  );
+  const { subscription, hasAccess: contextHasAccess, isLoading: loading } = useSubscription();
 
-  const fetchSubscription = useCallback(async () => {
-    if (!user?.email) return;
-
-    try {
-      const response = await fetch(
-        `/api/subscription/current?email=${user.email}`
-      );
-      const data = await response.json();
-      if (data.success) {
-        setSubscription(data.subscription);
-      }
-    } catch (error) {
-      console.error("Error fetching subscription:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.email]);
-
-  useEffect(() => {
-    if (user?.email) {
-      fetchSubscription();
-    } else {
-      setLoading(false);
-    }
-  }, [user, fetchSubscription]);
-
-  const hasAccess = (feature: string): boolean => {
-    if (!subscription || subscription.status !== "active") {
-      // Free tier permissions
-      switch (feature) {
-        case "basic_access":
-          return true;
-        case "single_college":
-          return true;
-        default:
-          return false;
-      }
-    }
-
-    const plan = subscription.plan;
-    if (!plan) return false;
-
-    switch (feature) {
-      case "all_colleges":
-        return plan.colleges_access >= 5;
-      case "realtime_alerts":
-        return plan.alert_type === "realtime";
-      case "filters":
-        return plan.has_filters;
-      case "keyword_filter":
-        return plan.has_keyword_filter;
-      case "advanced_filters":
-        return plan.has_advanced_filters;
-      case "api_access":
-        return plan.has_api_access;
-      default:
-        return false;
-    }
-  };
+  // Use the optimized hasAccess from context
+  const hasAccess = contextHasAccess;
 
   const checkUsage = async (type: string) => {
     if (!user?.email) {

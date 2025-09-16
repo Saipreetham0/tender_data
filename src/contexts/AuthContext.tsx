@@ -1,50 +1,32 @@
-// src/contexts/AuthContext.tsx - Improved version with better error handling
+// Supabase Auth Context - Restored original version
 "use client";
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { AuthError, Provider, Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/lib/auth";
+import { User, AuthError, Session } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
+import { authService, UserProfile, AuthUser } from "@/lib/auth";
 import { useAutoLogout } from "@/hooks/useAutoLogout";
-
-export interface UserProfile {
-  id: string;
-  email: string;
-  full_name?: string;
-  avatar_url?: string;
-  organization?: string;
-  phone?: string;
-  preferences?: Record<string, string | number | boolean | null>;
-}
-
-export interface AuthUser {
-  id: string;
-  email: string;
-  profile?: UserProfile;
-}
+import { clearAllSubscriptionCache } from "@/hooks/useOptimizedSubscription";
 
 interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
-  //   signInWithMagicLink: (email: string) => Promise<{ data: any; error: any }>;
-  //   signInWithGoogle: () => Promise<{ data: any; error: any }>;
-  //   signOut: () => Promise<void>;
-  //   updateProfile: (updates: Partial<UserProfile>) => Promise<{ data: any; error: any }>;
-  //   refreshProfile: () => Promise<void>;
-
+  
+  // Supabase auth methods
   signInWithMagicLink: (email: string) => Promise<{
-    data: { user: User | null; session: Session | null } | null;
-    error: AuthError | null;
+    data: any;
+    error: any;
   }>;
   signInWithGoogle: () => Promise<{
-    data:
-      | { provider: Provider; url: string }
-      | { provider: Provider; url: null };
-    error: AuthError | null;
+    data: any;
+    error: any;
   }>;
+  
   signOut: () => Promise<void>;
   updateProfile: (
     updates: Partial<UserProfile>
   ) => Promise<{ data: UserProfile | null; error: Error | null }>;
   refreshProfile: () => Promise<void>;
+  
   subscription: {
     plan?: {
       name: string;
@@ -68,108 +50,84 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     onWarning: (timeLeft: number) => {
       const minutesLeft = Math.ceil(timeLeft / 60000);
       console.warn(`Session will expire in ${minutesLeft} minutes`);
-      // You can show a toast notification here if desired
     }
   });
 
-  const loadUserProfile = async (authUser: User) => {
+  const loadUserProfile = async (supabaseUser: User) => {
     try {
-      // First, try to get existing profile
-      const { data: profile, error } = await supabase
-        .from("user_profiles")
-        .select("*")
-        .eq("id", authUser.id)
-        .single();
+      // Try to get existing profile from database
+      const { profile, error } = await authService.getUserProfile(supabaseUser.id);
 
-      if (error && error.code === "PGRST116") {
-        // Profile doesn't exist, create one
-        console.log("Creating user profile for:", authUser.email);
+      if (error) {
+        // Profile doesn't exist or error occurred, create one
+        console.log("Creating user profile for:", supabaseUser.email);
 
         const newProfile = {
-          id: authUser.id,
-          email: authUser.email!,
-          full_name:
-            authUser.user_metadata?.full_name ||
-            authUser.user_metadata?.name ||
-            authUser.email?.split("@")[0],
-          avatar_url: authUser.user_metadata?.avatar_url,
+          id: supabaseUser.id,
+          email: supabaseUser.email!,
+          full_name: supabaseUser.user_metadata?.full_name || supabaseUser.email!.split("@")[0],
+          avatar_url: supabaseUser.user_metadata?.avatar_url || undefined,
         };
 
-        const { data: createdProfile, error: createError } = await supabase
-          .from("user_profiles")
-          .insert(newProfile)
-          .select()
-          .single();
+        const { data: createdProfile, error: createError } = await authService.createProfile(
+          supabaseUser.id, 
+          newProfile
+        );
 
         if (createError) {
           console.error("Error creating user profile:", createError);
           // Still set user without profile
           setUser({
-            id: authUser.id,
-            email: authUser.email!,
+            id: supabaseUser.id,
+            email: supabaseUser.email!,
+          });
+        } else if (createdProfile) {
+          setUser({
+            id: supabaseUser.id,
+            email: supabaseUser.email!,
+            profile: createdProfile as UserProfile,
           });
         } else {
+          // Handle case where creation succeeded but no profile returned
           setUser({
-            id: authUser.id,
-            email: authUser.email!,
-            profile: createdProfile,
+            id: supabaseUser.id,
+            email: supabaseUser.email!,
           });
         }
-      } else if (error) {
-        console.error("Error loading user profile:", error);
-        // Set user without profile
-        setUser({
-          id: authUser.id,
-          email: authUser.email!,
-        });
       } else {
         // Profile exists
         setUser({
-          id: authUser.id,
-          email: authUser.email!,
-          profile,
+          id: supabaseUser.id,
+          email: supabaseUser.email!,
+          profile: profile as UserProfile,
         });
       }
     } catch (error) {
       console.error("Error in loadUserProfile:", error);
       // Fallback - set user without profile
       setUser({
-        id: authUser.id,
-        email: authUser.email!,
+        id: supabaseUser.id,
+        email: supabaseUser.email!,
       });
     }
   };
 
   useEffect(() => {
     // Get initial session
-    const getInitialSession = async () => {
-      try {
-        const {
-          data: { session },
-          error,
-        } = await supabase.auth.getSession();
-
-        if (error) {
-          console.error("Error getting session:", error);
-        }
-
-        if (session?.user) {
-          await loadUserProfile(session.user);
-        }
-      } catch (error) {
-        console.error("Error in getInitialSession:", error);
-      } finally {
-        setLoading(false);
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        await loadUserProfile(session.user);
+        startMonitoring();
       }
+      setLoading(false);
     };
 
-    getInitialSession();
+    getSession();
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event, session?.user?.email);
+    // Listen for Supabase auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Supabase auth state changed:", event, session?.user?.email);
 
       if (session?.user) {
         await loadUserProfile(session.user);
@@ -184,48 +142,123 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [startMonitoring, stopMonitoring]);
 
+  // Supabase auth methods
   const signInWithMagicLink = async (email: string) => {
-    const { data, error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-    return { data, error };
+    return await authService.signInWithMagicLink(email);
   };
 
   const signInWithGoogle = async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-    return { data, error };
+    return await authService.signInWithGoogle();
   };
 
   const signOut = async () => {
     stopMonitoring(); // Stop auto logout monitoring
-    await supabase.auth.signOut();
-    setUser(null);
+
+    try {
+      // Clear user state immediately to prevent UI issues
+      setUser(null);
+
+      // Clear all cached data first
+      clearAllSubscriptionCache();
+
+      // Clear all browser storage immediately
+      if (typeof window !== 'undefined') {
+        // Clear localStorage
+        const localStorageKeys = [
+          'supabase.auth.token',
+          'supabase-auth-token',
+          'auth-token',
+          'session',
+          'jwt-token'
+        ];
+
+        localStorageKeys.forEach(key => {
+          try {
+            localStorage.removeItem(key);
+          } catch (e) {
+            console.warn(`Failed to remove localStorage key: ${key}`, e);
+          }
+        });
+
+        // Clear sessionStorage completely
+        try {
+          sessionStorage.clear();
+        } catch (e) {
+          console.warn('Failed to clear sessionStorage', e);
+        }
+
+        // Clear all cookies manually
+        const cookiesToClear = [
+          'supabase-auth-token',
+          'supabase.auth.token',
+          'auth-token',
+          'session',
+          'jwt-token'
+        ];
+
+        cookiesToClear.forEach(cookieName => {
+          // Clear cookie for root domain
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${window.location.hostname}`;
+          // Clear cookie for current domain
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+          // Clear cookie without domain
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=.${window.location.hostname}`;
+        });
+      }
+
+      // Call logout API for server-side cleanup (non-blocking)
+      if (user?.id) {
+        fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id })
+        }).catch(error => {
+          console.warn('Logout API call failed:', error);
+        });
+      }
+
+      // Supabase logout (non-blocking)
+      authService.signOut().catch(error => {
+        console.warn('Supabase logout failed:', error);
+      });
+
+      // Wait a moment for cleanup to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Force hard redirect to login page
+      if (typeof window !== 'undefined') {
+        window.location.replace('/login?loggedOut=true');
+      }
+
+    } catch (error) {
+      console.error('Logout error:', error);
+
+      // Force cleanup even on error
+      setUser(null);
+
+      if (typeof window !== 'undefined') {
+        // Try to clear what we can
+        try {
+          localStorage.clear();
+          sessionStorage.clear();
+        } catch (e) {
+          console.warn('Failed to clear storage on error', e);
+        }
+
+        // Force redirect on error
+        window.location.replace('/login?loggedOut=true');
+      }
+    }
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!user) throw new Error("No user logged in");
 
-    const { data, error } = await supabase
-      .from("user_profiles")
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", user.id)
-      .select()
-      .single();
+    const { data, error } = await authService.updateProfile(user.id, updates);
 
-    if (!error) {
+    if (!error && data) {
       setUser((prev) =>
         prev
           ? {
@@ -236,17 +269,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       );
     }
 
-    return { data, error };
+    return { data, error: error as Error | null };
   };
 
   const refreshProfile = async () => {
     if (!user) return;
 
-    const { data: profile } = await supabase
-      .from("user_profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
+    const { profile } = await authService.getUserProfile(user.id);
 
     if (profile) {
       setUser((prev) => (prev ? { ...prev, profile } : null));
@@ -278,3 +307,6 @@ export function useAuth() {
   }
   return context;
 }
+
+// Export types for backward compatibility
+export type { UserProfile, AuthUser };

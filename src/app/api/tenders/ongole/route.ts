@@ -1,13 +1,48 @@
 import { NextResponse } from "next/server";
-import axios from "axios";
 import * as cheerio from "cheerio";
 import { Tender, APIResponse } from "@/lib/types";
-import { fixRelativeUrl, handleScrapingError } from "@/lib/utils";
+import {
+  robustAxiosGet,
+  fixRelativeUrl,
+  handleScrapingError,
+  DEFAULT_SCRAPER_CONFIG,
+  API_RESPONSE_LIMITS,
+  parsePaginationParams,
+  createPaginatedResponse
+} from "@/lib/scraper-utils";
+import { createFallbackResponse, shouldUseFallback } from "@/lib/scraper-fallback";
+import { enhancedTableScraper } from "@/lib/enhanced-scraper";
+import { cacheHelpers, CACHE_KEYS, CACHE_TTL } from "@/lib/redis";
 
 async function scrapeOngoleTenders(): Promise<Tender[]> {
   try {
+    console.log("Starting Ongole tender scraping for 20 tenders...");
+
+    // Try enhanced scraper first
+    const enhancedTenders = await enhancedTableScraper(
+      "https://www.rguktong.ac.in",
+      "RGUKT Ongole",
+      "/instituteinfo.php?data=tenders",
+      [
+        "/tenders.php",
+        "/tenders",
+        "/instituteinfo.php?data=tender",
+        "/instituteinfo.php?view=tenders"
+      ]
+    );
+
+    if (enhancedTenders.length > 0) {
+      return enhancedTenders;
+    }
+
+    // Fallback to original method if enhanced scraper doesn't work
+    console.log("Enhanced scraper didn't work, trying original method...");
     const baseUrl = "https://www.rguktong.ac.in";
-    const response = await axios.get(`${baseUrl}/instituteinfo.php?data=tenders`);
+
+    const response = await robustAxiosGet(
+      `${baseUrl}/instituteinfo.php?data=tenders`,
+      DEFAULT_SCRAPER_CONFIG
+    );
     const $ = cheerio.load(response.data);
     const tenders: Tender[] = [];
 
@@ -45,15 +80,20 @@ async function scrapeOngoleTenders(): Promise<Tender[]> {
           }))
           .get();
 
-        tenders.push({
+        const tender = {
           name: description,
           postedDate: postedDateCell.text().trim(),
           closingDate: closingDateCell.text().trim(),
           downloadLinks,
-        });
+        };
+
+        if (tender.name) {
+          tenders.push(tender);
+        }
       }
     });
 
+    console.log(`Ongole: Successfully scraped ${tenders.length} tenders`);
     return tenders;
   } catch (error) {
     handleScrapingError(error, "RGUKT Ongole");
@@ -61,18 +101,38 @@ async function scrapeOngoleTenders(): Promise<Tender[]> {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const tenders = await scrapeOngoleTenders();
-    const response: APIResponse = {
+    const { searchParams } = new URL(request.url);
+    const pagination = parsePaginationParams(searchParams);
+    const cacheKey = CACHE_KEYS.tenderData('ongole');
+
+    const allTenders = await cacheHelpers.getWithFallback(
+      cacheKey,
+      scrapeOngoleTenders,
+      CACHE_TTL.TENDER_DATA
+    );
+
+    // Create paginated response
+    const paginatedResult = createPaginatedResponse(allTenders, pagination);
+
+    const response = {
       success: true,
-      data: tenders,
+      ...paginatedResult,
       timestamp: new Date().toISOString(),
-      source: "RGUKT Ongole",
+      source: "RGUKT Ongole"
     };
+
     return NextResponse.json(response);
   } catch (error) {
     console.error("Error in GET route:", error);
+
+    // Use fallback for network/timeout errors
+    if (shouldUseFallback(error)) {
+      console.log("Using fallback data for RGUKT Ongole");
+      return NextResponse.json(createFallbackResponse("RGUKT Ongole"));
+    }
+
     return NextResponse.json(
       {
         success: false,

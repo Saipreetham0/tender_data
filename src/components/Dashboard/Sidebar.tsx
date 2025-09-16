@@ -1,6 +1,6 @@
 // src/components/Dashboard/Sidebar.tsx
 "use client";
-import React from 'react';
+import React, { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
@@ -103,9 +103,20 @@ const Sidebar: React.FC<SidebarProps> = ({
     onCloseMobile();
   };
 
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
   const handleSignOut = async () => {
-    await signOut();
-    router.push('/');
+    if (isSigningOut) return; // Prevent multiple clicks
+
+    setIsSigningOut(true);
+    try {
+      await signOut();
+      // signOut function will handle the redirect
+    } catch (error) {
+      console.error('Sign out error:', error);
+      // Force redirect even on error
+      window.location.replace('/login?loggedOut=true');
+    }
   };
 
   const SidebarContent = () => (
@@ -241,15 +252,24 @@ const Sidebar: React.FC<SidebarProps> = ({
         {/* Sign Out */}
         <button
           onClick={handleSignOut}
-          className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-all duration-200 text-left text-red-600 hover:bg-red-50 hover:text-red-700 relative group ${
+          disabled={isSigningOut}
+          className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-all duration-200 text-left relative group ${
             isCollapsed ? 'justify-center px-2' : ''
+          } ${
+            isSigningOut
+              ? 'text-gray-400 bg-gray-50 cursor-not-allowed'
+              : 'text-red-600 hover:bg-red-50 hover:text-red-700'
           }`}
         >
-          <LogOut className={`w-4 h-4 ${isCollapsed ? '' : 'flex-shrink-0'}`} />
-          {!isCollapsed && <span className="text-sm font-medium">Sign Out</span>}
+          <LogOut className={`w-4 h-4 ${isCollapsed ? '' : 'flex-shrink-0'} ${isSigningOut ? 'animate-spin' : ''}`} />
+          {!isCollapsed && (
+            <span className="text-sm font-medium">
+              {isSigningOut ? 'Signing Out...' : 'Sign Out'}
+            </span>
+          )}
           {isCollapsed && (
             <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
-              Sign Out
+              {isSigningOut ? 'Signing Out...' : 'Sign Out'}
             </div>
           )}
         </button>

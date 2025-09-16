@@ -108,8 +108,12 @@ node scripts/diagnose-auth-issues.js
 
 ### Data Scrapers
 - **Direct Scrapers**: Web scraping functionality in `src/lib/direct-scrapers.ts`
-- **Tender Sources**: Multiple tender data sources (basar, ongole, rgukt, rkvalley, sklm)
-- **Automated Collection**: Scheduled data collection with error handling
+- **Robust Scraping**: Enhanced with retry logic in `src/lib/scraper-utils.ts`
+- **Fallback System**: Graceful degradation in `src/lib/scraper-fallback.ts`
+- **SKLM Alternative**: Simple HTML scraper in `src/lib/sklm-simple-scraper.ts`
+- **Tender Sources**: Multiple tender data sources (basar, ongole, rkvalley, sklm, nuzvidu)
+- **Redis Caching**: All scraper routes now use Redis for 15-minute caching
+- **Automated Collection**: Scheduled data collection with comprehensive error handling and recovery
 
 ## Development Patterns
 
@@ -139,6 +143,9 @@ node scripts/diagnose-auth-issues.js
 - `src/lib/payment-security.ts` - Payment processing security
 - `src/lib/subscription.ts` - Subscription management logic
 - `src/lib/supabase.ts` - Database client configuration
+- `src/lib/redis.ts` - Redis client and caching utilities
+- `src/lib/rate-limiter.ts` - Redis-based rate limiting
+- `src/lib/session-cache.ts` - Session and subscription caching
 
 ### Database
 - `database/schema.sql` - Complete database schema with RLS policies

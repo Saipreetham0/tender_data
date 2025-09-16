@@ -15,6 +15,8 @@ import CurrentSubscriptionTab from "./CurrentSubscriptionTab";
 import FAQTab from "./FAQTab";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscriptionData } from "@/hooks/useSubscriptionData";
+import { useQuery } from "@tanstack/react-query";
 
 declare global {
   interface Window {
@@ -37,90 +39,48 @@ const SubscriptionManager: React.FC = () => {
   const { user } = useAuth();
   const router = useRouter();
 
-  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
-  const [currentSubscription, setCurrentSubscription] =
-    useState<UserSubscription | null>(null);
-  const [paymentHistory, setPaymentHistory] = useState<PaymentHistory[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">(
-    "yearly"
-  );
+  // Use optimized subscription hook with React Query
+  const {
+    subscription: currentSubscription,
+    paymentHistory,
+    isLoading: subscriptionLoading,
+    refetch
+  } = useSubscriptionData();
+
+  // Fetch plans with caching
+  const { data: plans = [], isLoading: plansLoading, error: plansError } = useQuery({
+    queryKey: ['subscription', 'plans'],
+    queryFn: async (): Promise<SubscriptionPlan[]> => {
+      const response = await fetch("/api/subscription/plans");
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || "Failed to fetch plans");
+      }
+
+      return data.plans.sort((a: SubscriptionPlan, b: SubscriptionPlan) =>
+        a.display_order - b.display_order
+      );
+    },
+    staleTime: 15 * 60 * 1000, // 15 minutes - plans don't change often
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    refetchOnWindowFocus: false,
+  });
+
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("yearly");
   const [processingPlanId, setProcessingPlanId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("plans");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [loadingTimeout, setLoadingTimeout] = useState(false);
 
-  const fetchData = React.useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  const loading = subscriptionLoading || plansLoading;
 
-      // Add timeout to prevent infinite loading
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Request timeout')), 10000)
-      );
-
-      // Fetch plans from database with timeout
-      const plansPromise = fetch("/api/subscription/plans");
-      const plansResponse = await Promise.race([plansPromise, timeoutPromise]) as Response;
-      const plansData = await plansResponse.json();
-      
-      if (plansData.success) {
-        setPlans(
-          plansData.plans.sort(
-            (a: SubscriptionPlan, b: SubscriptionPlan) =>
-              a.display_order - b.display_order
-          )
-        );
-      } else {
-        throw new Error(plansData.error || "Failed to fetch plans");
-      }
-
-      // Fetch current subscription
-      if (user?.email) {
-        const subResponse = await fetch(
-          `/api/subscription/current?email=${user.email}`
-        );
-        const subData = await subResponse.json();
-        if (subData.success) {
-          setCurrentSubscription(subData.subscription);
-        }
-
-        // Fetch payment history
-        const historyResponse = await fetch(
-          `/api/subscription/history?email=${user.email}`
-        );
-        const historyData = await historyResponse.json();
-        if (historyData.success) {
-          setPaymentHistory(historyData.payments || []);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      setError(error instanceof Error ? error.message : "Failed to load subscription data. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.email]);
-
+  // Handle errors from React Query
   useEffect(() => {
-    // Always fetch plans (pricing is public), but only fetch user data if authenticated
-    fetchData();
-  }, [fetchData]);
-
-  // Separate timeout effect
-  useEffect(() => {
-    if (loading) {
-      const loadingTimer = setTimeout(() => {
-        setLoadingTimeout(true);
-        setError("Loading is taking longer than expected. Please try refreshing the page.");
-        setLoading(false);
-      }, 15000); // 15 second timeout
-
-      return () => clearTimeout(loadingTimer);
+    if (plansError) {
+      setError(plansError instanceof Error ? plansError.message : "Failed to load plans data");
     }
-  }, [loading]);
+  }, [plansError]);
 
   const handleSubscribe = async (planId: string) => {
     if (!user?.email) {
@@ -188,18 +148,18 @@ const SubscriptionManager: React.FC = () => {
             if (verifyData.success) {
               // Use the actual subscription end date from the API response
               const expiryDate = verifyData.subscription?.ends_at || verifyData.subscription?.current_period_end;
-              const formattedExpiryDate = expiryDate 
+              const formattedExpiryDate = expiryDate
                 ? new Date(expiryDate).toLocaleDateString('en-IN', {
                     year: 'numeric',
-                    month: 'long', 
+                    month: 'long',
                     day: 'numeric'
                   })
                 : 'subscription period';
-              
+
               setSuccess(
                 `Payment successful! Your ${billingCycle} subscription is now active and will expire on ${formattedExpiryDate}.`
               );
-              await fetchData();
+              await refetch();
               setActiveTab("current");
             } else {
               throw new Error(
@@ -284,7 +244,7 @@ This action cannot be undone.`;
         setSuccess(
           "Subscription cancelled successfully. You'll continue to have access until your subscription expires. No future charges will occur as this was a one-time payment."
         );
-        await fetchData();
+        await refetch();
       } else {
         throw new Error(data.error || "Failed to cancel subscription");
       }
@@ -334,18 +294,6 @@ This action cannot be undone.`;
           <AlertCircle className="h-4 w-4 text-red-600" />
           <AlertDescription className="text-red-800">
             {error}
-            {loadingTimeout && (
-              <button
-                onClick={() => {
-                  setError(null);
-                  setLoadingTimeout(false);
-                  fetchData();
-                }}
-                className="ml-4 px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
-              >
-                Retry
-              </button>
-            )}
           </AlertDescription>
         </Alert>
       )}
@@ -369,7 +317,7 @@ This action cannot be undone.`;
         <TabsContent value="plans">
           <PlansTab
             plans={plans}
-            currentSubscription={currentSubscription}
+            currentSubscription={currentSubscription || null}
             billingCycle={billingCycle}
             setBillingCycle={setBillingCycle}
             processingPlanId={processingPlanId}
@@ -381,7 +329,7 @@ This action cannot be undone.`;
 
         <TabsContent value="current">
           <CurrentSubscriptionTab
-            currentSubscription={currentSubscription}
+            currentSubscription={currentSubscription || null}
             paymentHistory={paymentHistory}
             handleCancelSubscription={handleCancelSubscription}
             handlePauseSubscription={handlePauseSubscription}

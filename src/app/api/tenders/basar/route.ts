@@ -71,15 +71,28 @@
 
 // src/app/api/tenders/basar/route.ts
 import { NextResponse } from "next/server";
-import axios from "axios";
 import * as cheerio from "cheerio";
 import { Tender, APIResponse } from "@/lib/types";
-import { fixRelativeUrl, handleScrapingError } from "@/lib/utils";
+import {
+  robustAxiosGet,
+  fixRelativeUrl,
+  handleScrapingError,
+  DEFAULT_SCRAPER_CONFIG,
+  API_RESPONSE_LIMITS,
+  parsePaginationParams,
+  createPaginatedResponse
+} from "@/lib/scraper-utils";
+import { cacheHelpers, CACHE_KEYS, CACHE_TTL } from "@/lib/redis";
 
 async function scrapeBasarTenders(): Promise<Tender[]> {
   try {
     const baseUrl = "https://www.rgukt.ac.in";
-    const response = await axios.get(`${baseUrl}/tenders.html`);
+    console.log("Starting Basar tender scraping...");
+
+    const response = await robustAxiosGet(
+      `${baseUrl}/tenders.html`,
+      DEFAULT_SCRAPER_CONFIG
+    );
     const $ = cheerio.load(response.data);
     const tenders: Tender[] = [];
 
@@ -98,17 +111,21 @@ async function scrapeBasarTenders(): Promise<Tender[]> {
           .get();
 
         if (links.length > 0) {
-          tenders.push({
+          const tender = {
             name: links[0].text,
             postedDate: date,
             closingDate: "", // Not provided in the HTML
             downloadLinks: links,
-            source: "Basar" // Add source to fix the type error
-          });
+          };
+
+          if (tender.name) {
+            tenders.push(tender);
+          }
         }
       }
     });
 
+    console.log(`Basar: Successfully scraped ${tenders.length} tenders`);
     return tenders;
   } catch (error) {
     handleScrapingError(error, "RGUKT Basar");
@@ -116,15 +133,28 @@ async function scrapeBasarTenders(): Promise<Tender[]> {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const tenders = await scrapeBasarTenders();
-    const response: APIResponse = {
+    const { searchParams } = new URL(request.url);
+    const pagination = parsePaginationParams(searchParams);
+    const cacheKey = CACHE_KEYS.tenderData('basar');
+
+    const allTenders = await cacheHelpers.getWithFallback(
+      cacheKey,
+      scrapeBasarTenders,
+      CACHE_TTL.TENDER_DATA
+    );
+
+    // Create paginated response
+    const paginatedResult = createPaginatedResponse(allTenders, pagination);
+
+    const response = {
       success: true,
-      data: tenders,
+      ...paginatedResult,
       timestamp: new Date().toISOString(),
-      source: "RGUKT Basar",
+      source: "RGUKT Basar"
     };
+
     return NextResponse.json(response);
   } catch (error) {
     console.error("Error in GET route:", error);

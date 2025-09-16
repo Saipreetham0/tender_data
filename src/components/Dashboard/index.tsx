@@ -113,6 +113,12 @@ const TenderDashboard: React.FC = () => {
       icon: Building2,
       mainSiteUrl: "https://rguktsklm.ac.in/tenders",
     },
+    {
+      id: "nuzvidu",
+      name: "RGUKT Nuzvidu",
+      icon: Building2,
+      mainSiteUrl: "https://rguktn.ac.in/tenders",
+    },
   ];
 
   // Function to load data from database first
@@ -144,8 +150,11 @@ const TenderDashboard: React.FC = () => {
   // Function to fetch fresh data and update database
   const fetchAndStoreData = async () => {
     try {
+      // Filter out RGUKT campus (temporarily disabled)
+      const activeCampuses = campuses.filter(campus => campus.id !== 'rgukt');
+
       const results = await Promise.all(
-        campuses.map(async (campus) => {
+        activeCampuses.map(async (campus) => {
           try {
             const data = await fetchTenderData(campus.id);
 
@@ -164,7 +173,10 @@ const TenderDashboard: React.FC = () => {
         })
       );
 
-      const freshData = Object.fromEntries(results);
+      // Add empty data for RGUKT to maintain structure
+      const resultsWithRgukt = [...results, ['rgukt', { data: [] }] as [string, TenderData]];
+
+      const freshData = Object.fromEntries(resultsWithRgukt);
 
       // Store fresh data in database (background operation)
       Object.entries(freshData).forEach(async ([campusId, data]) => {
@@ -491,7 +503,7 @@ const TenderDashboard: React.FC = () => {
           </div>
         ) : (
           <Tabs
-            defaultValue="rgukt"
+            defaultValue="basar"
             className="space-y-6"
             onValueChange={(value) => {
               setCurrentPage(1);
@@ -500,24 +512,36 @@ const TenderDashboard: React.FC = () => {
             <TabsList className="flex flex-wrap h-auto gap-2 bg-white p-2 rounded-lg shadow-lg border border-gray-200">
               {campuses.map((campus) => {
                 const Icon = campus.icon;
+                const isDisabled = campus.id === 'rgukt';
                 return (
                   <TabsTrigger
                     key={campus.id}
                     value={campus.id}
-                    className="flex items-center gap-2 px-4 py-2 text-gray-600 data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-lg transition-all duration-200 hover:bg-gray-50 font-medium"
+                    disabled={isDisabled}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 font-medium ${
+                      isDisabled
+                        ? "text-gray-400 bg-gray-100 cursor-not-allowed opacity-60"
+                        : "text-gray-600 data-[state=active]:bg-blue-600 data-[state=active]:text-white hover:bg-gray-50"
+                    }`}
                   >
                     <Icon className="w-4 h-4" />
                     <span className="hidden sm:inline">{campus.name}</span>
                     <span className="sm:hidden">
                       {campus.name.split(" ")[0]}
                     </span>
-                    {tenderData[campus.id]?.data?.length > 0 && (
-                      <Badge
-                        variant="secondary"
-                        className="bg-gray-100 text-gray-700 data-[state=active]:bg-white/20 data-[state=active]:text-white"
-                      >
-                        {tenderData[campus.id].data.length}
+                    {isDisabled ? (
+                      <Badge variant="secondary" className="bg-red-100 text-red-600 text-xs">
+                        Temp. Disabled
                       </Badge>
+                    ) : (
+                      tenderData[campus.id]?.data?.length > 0 && (
+                        <Badge
+                          variant="secondary"
+                          className="bg-gray-100 text-gray-700 data-[state=active]:bg-white/20 data-[state=active]:text-white"
+                        >
+                          {tenderData[campus.id].data.length}
+                        </Badge>
+                      )
                     )}
                   </TabsTrigger>
                 );
@@ -551,7 +575,19 @@ const TenderDashboard: React.FC = () => {
                 </div>
 
                 <div className="space-y-4">
-                  {tenderData[campus.id]?.data?.length > 0 ? (
+                  {campus.id === 'rgukt' ? (
+                    <Card className="border-dashed border-2 border-yellow-300 bg-yellow-50">
+                      <CardContent className="text-center py-12">
+                        <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+                        <p className="text-yellow-800 font-medium mb-2">
+                          {campus.name} is temporarily disabled
+                        </p>
+                        <p className="text-yellow-700 text-sm">
+                          This route is under maintenance. Please check other campuses for tenders.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ) : tenderData[campus.id]?.data?.length > 0 ? (
                     getPaginatedTenders(
                       getFilteredAndSortedTenders(tenderData[campus.id].data)
                     ).map((tender: Tender, index: number) => (

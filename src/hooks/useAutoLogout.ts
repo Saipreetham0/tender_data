@@ -1,7 +1,9 @@
-// src/hooks/useAutoLogout.ts
+// Supabase Auto Logout Hook
 "use client";
 import { useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import type { User } from '@supabase/supabase-js';
 
 interface UseAutoLogoutOptions {
   onLogout?: () => Promise<void> | void;
@@ -21,11 +23,10 @@ export function useAutoLogout(options: UseAutoLogoutOptions = {}) {
   const router = useRouter();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const warningShownRef = useRef(false);
+  const currentUserRef = useRef<User | null>(null);
 
   const checkTokenExpiration = useCallback(async () => {
     try {
-      // Check Supabase session instead of localStorage token
-      const { supabase } = await import('@/lib/auth');
       const { data: { session }, error } = await supabase.auth.getSession();
       
       if (error || !session) {
@@ -34,7 +35,10 @@ export function useAutoLogout(options: UseAutoLogoutOptions = {}) {
         return;
       }
 
-      // Check token expiration
+      const user = session.user;
+      currentUserRef.current = user;
+
+      // Check if token is expired based on expires_at
       const expirationTime = session.expires_at ? session.expires_at * 1000 : 0;
       const currentTime = Date.now();
       const timeLeft = expirationTime - currentTime;
@@ -59,19 +63,18 @@ export function useAutoLogout(options: UseAutoLogoutOptions = {}) {
 
     } catch (error) {
       console.error('Error checking token expiration:', error);
-      // If session check fails, logout for security
+      // If token check fails, logout for security
       await handleLogout();
     }
   }, [onLogout, warningTime, onWarning]);
 
   const handleLogout = useCallback(async () => {
     try {
-      // Call custom logout handler if provided (this will handle Supabase signOut)
+      // Call custom logout handler if provided
       if (onLogout) {
         await onLogout();
       } else {
         // Fallback: directly sign out from Supabase
-        const { supabase } = await import('@/lib/auth');
         await supabase.auth.signOut();
       }
       
@@ -90,8 +93,10 @@ export function useAutoLogout(options: UseAutoLogoutOptions = {}) {
       clearInterval(intervalRef.current);
     }
 
-    // Check immediately
-    checkTokenExpiration();
+    // Check immediately if user is available
+    if (currentUserRef.current) {
+      checkTokenExpiration();
+    }
     
     // Set up periodic checking
     intervalRef.current = setInterval(checkTokenExpiration, checkInterval);
@@ -104,6 +109,7 @@ export function useAutoLogout(options: UseAutoLogoutOptions = {}) {
       intervalRef.current = null;
     }
     warningShownRef.current = false;
+    currentUserRef.current = null;
   }, []);
 
   // Manual logout function
@@ -114,25 +120,23 @@ export function useAutoLogout(options: UseAutoLogoutOptions = {}) {
   useEffect(() => {
     // Only start monitoring if we're on the client side
     if (typeof window !== 'undefined') {
-      // Check if there's a valid session before starting monitoring
-      const checkInitialSession = async () => {
-        try {
-          const { supabase } = await import('@/lib/auth');
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session) {
-            startMonitoring();
-          }
-        } catch (error) {
-          console.error('Error checking initial session:', error);
+      // Set up auth state listener to track current user
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        const user = session?.user || null;
+        currentUserRef.current = user;
+        
+        if (user) {
+          startMonitoring();
+        } else {
+          stopMonitoring();
         }
-      };
-      
-      checkInitialSession();
-    }
+      });
 
-    return () => {
-      stopMonitoring();
-    };
+      return () => {
+        subscription.unsubscribe();
+        stopMonitoring();
+      };
+    }
   }, [startMonitoring, stopMonitoring]);
 
   // Clean up on unmount

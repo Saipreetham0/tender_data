@@ -17,49 +17,48 @@ const RATE_LIMITS = {
 function getClientIP(request: NextRequest): string {
   const forwarded = request.headers.get("x-forwarded-for");
   const realIP = request.headers.get("x-real-ip");
-  
+
   if (forwarded) {
     return forwarded.split(',')[0].trim();
   }
-  
+
   if (realIP) {
     return realIP;
   }
-  
+
   return 'unknown';
 }
 
 function checkRateLimit(clientIP: string, windowMs: number, maxRequests: number): { allowed: boolean; remaining: number; resetTime: number } {
   const now = Date.now();
   const key = clientIP;
-  const windowStart = now - windowMs;
-  
+
   // Clean up old entries
   for (const [k, v] of rateLimitMap.entries()) {
     if (v.resetTime < now) {
       rateLimitMap.delete(k);
     }
   }
-  
+
   const current = rateLimitMap.get(key);
-  
+
   if (!current || current.resetTime < now) {
     // First request or window expired
     rateLimitMap.set(key, { count: 1, resetTime: now + windowMs });
     return { allowed: true, remaining: maxRequests - 1, resetTime: now + windowMs };
   }
-  
+
   if (current.count >= maxRequests) {
     return { allowed: false, remaining: 0, resetTime: current.resetTime };
   }
-  
+
   current.count++;
   return { allowed: true, remaining: maxRequests - current.count, resetTime: current.resetTime };
 }
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
+
   // Handle preflight requests
   if (request.method === 'OPTIONS') {
     return new NextResponse(null, {
@@ -76,23 +75,23 @@ export async function middleware(request: NextRequest) {
   // Rate limiting for API routes
   if (pathname.startsWith('/api/')) {
     const clientIP = getClientIP(request);
-    
+
     // Find applicable rate limit
     const rateLimitKey = Object.keys(RATE_LIMITS).find(key => pathname.startsWith(key));
     const rateLimit = rateLimitKey ? RATE_LIMITS[rateLimitKey as keyof typeof RATE_LIMITS] : RATE_LIMITS['/api/'];
-    
+
     try {
       const result = checkRateLimit(clientIP, rateLimit.windowMs, rateLimit.maxRequests);
-      
+
       if (!result.allowed) {
         return NextResponse.json(
-          { 
-            success: false, 
+          {
+            success: false,
             error: 'Rate limit exceeded',
             code: 'RATE_LIMIT_EXCEEDED',
             retryAfter: Math.ceil((result.resetTime - Date.now()) / 1000)
           },
-          { 
+          {
             status: 429,
             headers: {
               'X-RateLimit-Limit': rateLimit.maxRequests.toString(),
@@ -103,16 +102,16 @@ export async function middleware(request: NextRequest) {
           }
         );
       }
-      
+
       // Add rate limit headers to response
       const response = NextResponse.next();
       response.headers.set('X-RateLimit-Limit', rateLimit.maxRequests.toString());
       response.headers.set('X-RateLimit-Remaining', result.remaining.toString());
       response.headers.set('X-RateLimit-Reset', result.resetTime.toString());
-      
+
       // Add security headers
       addSecurityHeaders(response, request);
-      
+
       return response;
     } catch (error) {
       console.error('Rate limiting error:', error);
@@ -123,7 +122,7 @@ export async function middleware(request: NextRequest) {
   // Add security headers to all responses
   const response = NextResponse.next();
   addSecurityHeaders(response, request);
-  
+
   return response;
 }
 
@@ -134,11 +133,11 @@ function getAllowedOrigin(request: NextRequest): string {
     'https://tendernotify.site',
     'https://localhost:3000',
   ].filter(Boolean);
-  
+
   if (origin && allowedOrigins.includes(origin)) {
     return origin;
   }
-  
+
   return allowedOrigins[0] || '*';
 }
 
@@ -148,7 +147,7 @@ function addSecurityHeaders(response: NextResponse, request: NextRequest) {
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set("X-XSS-Protection", "1; mode=block");
-  
+
   // Content Security Policy
   const csp = [
     "default-src 'self'",
@@ -164,9 +163,9 @@ function addSecurityHeaders(response: NextResponse, request: NextRequest) {
     "frame-ancestors 'none'",
     "upgrade-insecure-requests"
   ].join('; ');
-  
+
   response.headers.set("Content-Security-Policy", csp);
-  
+
   // HSTS for HTTPS
   if (request.nextUrl.protocol === 'https:') {
     response.headers.set(
@@ -174,7 +173,7 @@ function addSecurityHeaders(response: NextResponse, request: NextRequest) {
       "max-age=31536000; includeSubDomains; preload"
     );
   }
-  
+
   // CORS headers for API routes
   if (request.nextUrl.pathname.startsWith("/api/")) {
     response.headers.set("Access-Control-Allow-Origin", getAllowedOrigin(request));
@@ -188,7 +187,7 @@ function addSecurityHeaders(response: NextResponse, request: NextRequest) {
     );
     response.headers.set("Access-Control-Allow-Credentials", "true");
   }
-  
+
   // Add request ID for tracing
   response.headers.set("X-Request-ID", generateRequestId());
 }

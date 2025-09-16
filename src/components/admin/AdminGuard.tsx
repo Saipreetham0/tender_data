@@ -19,47 +19,26 @@ export function AdminGuard({ children, requiredPermission }: AdminGuardProps) {
   useEffect(() => {
     const checkAdminStatus = async () => {
       if (loading) return;
-      
+
       if (!user) {
         router.push('/login');
         return;
       }
 
-      try {
-        // Use the same logic as AdminDebug since that works
-        const ADMIN_EMAILS = [
-          'admin@tendernotify.site',
-          'koyyalasaipreetham@gmail.com',
-          'info@kspdigitalsolutions.com'
-        ];
+      // Simple admin check - just check if email is in admin list
+      const ADMIN_EMAILS = [
+        'admin@tendernotify.site',
+        'koyyalasaipreetham@gmail.com',
+        'info@kspdigitalsolutions.com'
+      ];
 
-        const isAdminEmail = ADMIN_EMAILS.includes(user.email.toLowerCase());
-        
-        if (isAdminEmail) {
-          // Get admin permissions based on email
-          const permissions = user.email === 'admin@tendernotify.site' 
-            ? ['view_dashboard', 'view_users', 'view_payments', 'view_analytics', 'view_api_logs', 'manage_users', 'manage_payments', 'manage_subscriptions', 'view_system_logs', 'manage_admins', 'system_settings', 'dangerous_operations', 'export_data']
-            : ['view_dashboard', 'view_users', 'view_payments', 'view_analytics', 'view_api_logs', 'manage_users', 'manage_payments', 'manage_subscriptions', 'view_system_logs'];
-          
-          // Check specific permission if required
-          if (requiredPermission && !permissions.includes(requiredPermission)) {
-            setIsAdmin(false);
-          } else {
-            setIsAdmin(true);
-          }
-        } else {
-          setIsAdmin(false);
-        }
-      } catch (error) {
-        console.error('Admin verification error:', error);
-        setIsAdmin(false);
-      } finally {
-        setChecking(false);
-      }
+      const isAdminEmail = ADMIN_EMAILS.includes(user.email.toLowerCase());
+      setIsAdmin(isAdminEmail);
+      setChecking(false);
     };
 
     checkAdminStatus();
-  }, [user, loading, router, requiredPermission]);
+  }, [user, loading, router]);
 
   if (loading || checking) {
     return (

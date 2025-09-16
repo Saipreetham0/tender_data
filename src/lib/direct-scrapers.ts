@@ -1,8 +1,14 @@
 // src/lib/direct-scrapers.ts
-import axios from 'axios';
 import * as cheerio from 'cheerio';
 import puppeteer from 'puppeteer';
+import axios from 'axios';
 import { Tender } from './types';
+import {
+  robustAxiosGet,
+  DEFAULT_SCRAPER_CONFIG,
+  DEFAULT_SCRAPING_LIMITS,
+  handleScrapingError as handleError
+} from './scraper-utils';
 
 /**
  * Alternative approach: scrape websites directly instead of using API routes
@@ -188,6 +194,101 @@ export async function scrapeBasarTenders(): Promise<Tender[]> {
 
 
 
+
+// Import the enhanced scraper at the top of the file (after other imports)
+import { enhancedTableScraper } from './enhanced-scraper';
+
+// Scrape RGUKT Nuzvidu tenders
+export async function scrapeRGUKTNuzviduTenders(): Promise<Tender[]> {
+  try {
+    console.log("Starting Nuzvidu tender scraping for 20 tenders...");
+
+    // Try enhanced scraper first
+    const enhancedTenders = await enhancedTableScraper(
+      "https://rguktn.ac.in",
+      "RGUKT Nuzvidu",
+      "/tenders/",
+      [
+        "/tenders",
+        "/tender",
+        "/tenders.php",
+        "/Institute.php?view=Tenders"
+      ]
+    );
+
+    if (enhancedTenders.length > 0) {
+      return enhancedTenders;
+    }
+
+    // Fallback to original method if enhanced scraper doesn't work
+    console.log("Enhanced scraper didn't work, trying original method...");
+    const baseUrl = "https://rguktn.ac.in/tenders";
+
+    const response = await robustAxiosGet(
+      `${baseUrl}/`,
+      DEFAULT_SCRAPER_CONFIG
+    );
+    const $ = cheerio.load(response.data);
+    const tenders: Tender[] = [];
+
+    // Look for table rows in the tenders page
+    $("table tr:gt(0)").each((_, element) => {
+      const cols = $(element).find("td");
+      if (cols.length >= 4) {
+        // Extract tender name from first column
+        const name = $(cols[0]).text().trim();
+
+        // Extract posted date from second column
+        const postedDate = $(cols[1]).text().trim();
+
+        // Extract closing date from third column
+        const closingDate = $(cols[2]).text().trim();
+
+
+        // Extract download links from the last column
+        const downloadLinks = $(cols[cols.length - 1])
+          .find("a")
+          .map((_, link) => {
+            const href = $(link).attr("href") || "";
+            let finalUrl = href;
+
+            // Handle relative URLs specifically for RGUKT Nuzvidu
+            if (href && !href.startsWith("http")) {
+              if (href.startsWith("docs/")) {
+                finalUrl = `https://rguktn.ac.in/tenders/${href}`;
+              } else {
+                finalUrl = fixRelativeUrl(href, baseUrl);
+              }
+            }
+
+            return {
+              text: $(link).text().trim() || "Download",
+              url: finalUrl,
+            };
+          })
+          .get();
+
+        // Only add tenders with valid names and download links
+        if (name && downloadLinks.length > 0) {
+          tenders.push({
+            name,
+            postedDate,
+            closingDate,
+            downloadLinks,
+            // Add source identifier
+            source: "RGUKT Nuzvidu"
+          });
+        }
+      }
+    });
+
+    console.log(`Nuzvidu: Successfully scraped ${tenders.length} tenders`);
+    return tenders;
+  } catch (error) {
+    handleError(error, "RGUKT Nuzvidu");
+    return [];
+  }
+}
 
 // Scrape Srikakulam tenders using Puppeteer
 export async function scrapeSrikakulamTenders(): Promise<Tender[]> {

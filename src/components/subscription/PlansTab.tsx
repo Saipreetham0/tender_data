@@ -137,8 +137,8 @@
 //                   <td className="py-3 px-4 font-medium">Colleges Access</td>
 //                   {plans.map((plan) => (
 //                     <td key={plan.id} className="text-center py-3 px-4">
-//                       {plan.colleges_access === 5
-//                         ? "All 5"
+//                       {plan.colleges_access === 6
+//                         ? "All 6"
 //                         : `${plan.colleges_access} college`}
 //                     </td>
 //                   ))}
@@ -351,7 +351,7 @@ const PlansTab: React.FC<PlansTabProps> = ({
         <div className="grid md:grid-cols-2 gap-4 text-left">
           <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
             <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-            <span>All 5 RGUKT Campuses</span>
+            <span>All 6 RGUKT Campuses</span>
           </div>
           <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
             <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />

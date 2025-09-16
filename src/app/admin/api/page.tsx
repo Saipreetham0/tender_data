@@ -66,7 +66,7 @@ interface APIStats {
 const mockApiLogs: APILog[] = [
   {
     id: '1',
-    endpoint: '/api/tenders/rgukt',
+    endpoint: '/api/tenders/basar',
     method: 'GET',
     statusCode: 200,
     responseTime: 245,
@@ -118,10 +118,10 @@ const mockApiStats: APIStats = {
   averageResponseTime: 312,
   requestsPerHour: 1285,
   topEndpoints: [
-    { endpoint: '/api/tenders/rgukt', count: 3421 },
-    { endpoint: '/api/tenders/basar', count: 2876 },
+    { endpoint: '/api/tenders/basar', count: 3421 },
+    { endpoint: '/api/tenders/ongole', count: 2876 },
     { endpoint: '/api/subscription/current', count: 2145 },
-    { endpoint: '/api/tenders/ongole', count: 1987 },
+    { endpoint: '/api/tenders/sklm', count: 1987 },
     { endpoint: '/api/payment/create-order', count: 1234 }
   ],
   recentErrors: mockApiLogs.filter(log => log.statusCode >= 400)

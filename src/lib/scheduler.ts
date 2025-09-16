@@ -132,7 +132,8 @@ import {
   scrapeRKValleyTenders,
   scrapeOngoleTenders,
   scrapeBasarTenders,
-  scrapeSrikakulamTenders
+  scrapeSrikakulamTenders,
+  scrapeRGUKTNuzviduTenders
 } from './direct-scrapers';
 
 // Define campus sources with scraping functions
@@ -161,6 +162,11 @@ const CAMPUSES = [
     id: 'sklm',
     name: 'Srikakulam',
     scraper: scrapeSrikakulamTenders
+  },
+  {
+    id: 'nuzvidu',
+    name: 'RGUKT Nuzvidu',
+    scraper: scrapeRGUKTNuzviduTenders
   },
 ];
 

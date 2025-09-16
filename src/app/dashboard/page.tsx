@@ -1,7 +1,7 @@
 // src/app/dashboard/page.tsx
 "use client";
 import React, { useState } from "react";
-import { AuthGuard } from "@/components/AuthComponents";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import Sidebar from "@/components/Dashboard/Sidebar";
 import DashboardContent from "@/components/Dashboard/DashboardContent";
 
@@ -22,7 +22,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <AuthGuard>
+    <ProtectedRoute>
       <div className="min-h-screen bg-gray-50 flex">
         {/* Sidebar */}
         <Sidebar
@@ -62,6 +62,6 @@ export default function DashboardPage() {
           </main>
         </div>
       </div>
-    </AuthGuard>
+    </ProtectedRoute>
   );
 }

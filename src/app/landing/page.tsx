@@ -22,7 +22,7 @@ import {
   Search,
   Download,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { OptimizedButton } from "@/components/ui/OptimizedButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -45,7 +45,7 @@ const LandingPage = () => {
       icon: <Building2 className="h-8 w-8" />,
       title: "All RGUKT Campuses",
       description:
-        "Access tenders from all 5 RGUKT campuses in one unified platform.",
+        "Access tenders from all 6 RGUKT campuses in one unified platform.",
       highlights: [
         "RGUKT Main Campus",
         "Basar, Ongole, RK Valley",
@@ -126,7 +126,7 @@ const LandingPage = () => {
       price: { monthly: 299, yearly: 2099 },
       description: "Most popular for professionals",
       features: [
-        "All 5 RGUKT campuses",
+        "All 6 RGUKT campuses",
         "Real-time email alerts",
         "Unlimited tender views",
         "Priority email support",
@@ -151,7 +151,7 @@ const LandingPage = () => {
   ];
 
   const stats = [
-    { number: "5", label: "RGUKT Campuses" },
+    { number: "6", label: "RGUKT Campuses" },
     { number: "New", label: "Platform" },
     { number: "24/7", label: "Monitoring" },
     { number: "100%", label: "Free Trial" },
@@ -350,24 +350,24 @@ const LandingPage = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-6 mb-16">
-              <Button
+              <OptimizedButton
                 size="lg"
                 onClick={() => router.push("/subscription")}
                 className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
               >
-                Start Free Trial
+                <span>Start Free Trial</span>
                 <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
+              </OptimizedButton>
 
-              <Button
+              <OptimizedButton
                 variant="outline"
                 size="lg"
                 onClick={() => router.push("/")}
                 className="px-8 py-4 text-lg border-2 hover:bg-gray-50"
               >
                 <Globe className="mr-2 h-5 w-5" />
-                View Tenders
-              </Button>
+                <span>View Tenders</span>
+              </OptimizedButton>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-3xl mx-auto">
@@ -475,10 +475,10 @@ const LandingPage = () => {
               Want to influence our roadmap? We&apos;d love to hear your
               suggestions!
             </p>
-            <Button variant="outline" size="lg">
+            <OptimizedButton variant="outline" size="lg">
               <Mail className="mr-2 h-5 w-5" />
               Share Your Ideas
-            </Button>
+            </OptimizedButton>
           </div>
         </div>
       </section>
@@ -617,12 +617,12 @@ const LandingPage = () => {
                     ))}
                   </ul>
 
-                  <Button
+                  <OptimizedButton
                     className={`w-full ${plan.popular ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-900 hover:bg-gray-800"}`}
                     onClick={() => router.push("/subscription")}
                   >
                     {plan.cta}
-                  </Button>
+                  </OptimizedButton>
                 </CardContent>
               </Card>
             ))}
@@ -643,23 +643,23 @@ const LandingPage = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-6">
-            <Button
+            <OptimizedButton
               size="lg"
               onClick={() => router.push("/subscription")}
               className="px-8 py-4 bg-white text-blue-600 hover:bg-gray-50 text-lg font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
             >
-              Start Free
+              <span>Start Free</span>
               <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
+            </OptimizedButton>
 
-            <Button
+            <OptimizedButton
               variant="outline"
               size="lg"
               onClick={() => router.push("/")}
               className="px-8 py-4 text-lg border-2 border-white text-black hover:bg-white hover:text-blue-600"
             >
               Browse Tenders
-            </Button>
+            </OptimizedButton>
           </div>
 
           <div className="mt-8 text-blue-100 text-sm">
@@ -689,14 +689,14 @@ const LandingPage = () => {
                 all RGUKT campuses. Simple, efficient, and always improving.
               </p>
               <div className="flex space-x-4">
-                <Button
+                <OptimizedButton
                   variant="outline"
                   size="sm"
                   className="border-gray-600 text-gray-400 hover:text-white"
                 >
                   <Mail className="h-4 w-4 mr-2" />
                   info@kspdigitalsolutions.com
-                </Button>
+                </OptimizedButton>
               </div>
             </div>
 

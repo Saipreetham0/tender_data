@@ -1,6 +1,258 @@
+// import { NextResponse } from "next/server";
+// import * as puppeteer from "puppeteer";
+// import { createFallbackResponse } from "@/lib/scraper-fallback";
+
+// // Define types
+// interface DownloadLink {
+//   text: string;
+//   url: string;
+// }
+
+// interface Tender {
+//   name: string;
+//   postedDate: string;
+//   closingDate: string;
+//   downloadLinks: DownloadLink[];
+// }
+
+// interface APIResponse {
+//   success: boolean;
+//   data?: Tender[];
+//   error?: string;
+//   timestamp: string;
+//   source: string;
+//   message?: string;
+//   totalPages?: number;
+//   currentPage?: number;
+//   totalTenders?: number;
+// }
+
+// // Helper function to handle scraping errors
+// function handleScrapingError(error: Error | unknown, source: string): void {
+//   console.error(`Scraping error from ${source}:`, error);
+// }
+
+// async function scrapeSrikakulamTenders(): Promise<Tender[]> {
+//   let browser = null;
+//   const tenders: Tender[] = [];
+
+//   try {
+//     console.log("Starting RGUKT Srikakulam scraping...");
+
+//     // Launch browser with minimal, stable configuration
+//     browser = await puppeteer.launch({
+//       headless: true,
+//       args: [
+//         "--no-sandbox",
+//         "--disable-setuid-sandbox",
+//         "--disable-dev-shm-usage",
+//         "--disable-gpu",
+//         "--no-zygote",
+//       ],
+//       timeout: 30000,
+//     });
+
+//     const page = await browser.newPage();
+
+//     // Set a reasonable timeout
+//     page.setDefaultTimeout(20000);
+
+//     // Set viewport and user agent
+//     await page.setViewport({ width: 1920, height: 1080 });
+//     await page.setUserAgent(
+//       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+//     );
+
+//     // Navigate to the tenders page
+//     console.log("Navigating to RGUKT Srikakulam tenders page...");
+//     await page.goto("https://rguktsklm.ac.in/tenders/", {
+//       waitUntil: "networkidle2",
+//       timeout: 20000,
+//     });
+
+//     // Wait for the table to appear
+//     await page.waitForSelector("#tbltenders", { timeout: 15000 });
+//     console.log("Table found, extracting tenders...");
+
+//     // Function to extract tenders from current page
+//     const extractTendersFromPage = async () => {
+//       return await page.evaluate(() => {
+//         const baseUrl = "https://rguktsklm.ac.in/tenders";
+//         const tenderList: any[] = [];
+//         const rows = document.querySelectorAll("#tbltenders tbody tr");
+
+//         rows.forEach((row) => {
+//           const cols = row.querySelectorAll("td");
+//           if (cols.length >= 4) {
+//             // Extract description from the first column
+//             const descriptionDiv = cols[0].querySelector("div.d-flex.fw-bold");
+//             const description = descriptionDiv
+//               ? descriptionDiv.textContent?.trim()
+//               : "";
+
+//             // Extract dates
+//             const postedDateDiv = cols[1].querySelector("div.text-success");
+//             const postedDate = postedDateDiv
+//               ? postedDateDiv.textContent?.trim()
+//               : "";
+
+//             const closingDateDiv = cols[2].querySelector("div.text-warning");
+//             const closingDate = closingDateDiv
+//               ? closingDateDiv.textContent?.trim()
+//               : "";
+
+//             // Get download links
+//             const downloadLinks = Array.from(cols[3].querySelectorAll("a"))
+//               .map((link) => {
+//                 const onclickAttr = link.getAttribute("onclick") || "";
+//                 let url = "";
+
+//                 // Extract the file path from the onclick attribute
+//                 const match = onclickAttr.match(/link\([^,]+,\s*'([^']+)'\)/);
+//                 if (match && match[1]) {
+//                   url = match[1];
+//                   if (!url.startsWith("http")) {
+//                     if (url.startsWith("/")) {
+//                       url = `${baseUrl}${url}`;
+//                     } else {
+//                       url = `${baseUrl}/${url}`;
+//                     }
+//                   }
+//                 }
+
+//                 return {
+//                   text: link.textContent?.trim() || "Download",
+//                   url: url,
+//                 };
+//               })
+//               .filter((link) => link.url);
+
+//             const tender = {
+//               name: description || "",
+//               postedDate: postedDate || "",
+//               closingDate: closingDate || "",
+//               downloadLinks,
+//             };
+
+//             if (tender.name) {
+//               tenderList.push(tender);
+//             }
+//           }
+//         });
+
+//         return tenderList;
+//       });
+//     };
+
+//     // Extract tenders from first page
+//     const firstPageTenders = await extractTendersFromPage();
+//     tenders.push(...firstPageTenders);
+//     console.log(`RGUKT Srikakulam: Page 1 - ${firstPageTenders.length} tenders`);
+
+//     // If we have less than 20 tenders, try to get more from next pages
+//     let currentPage = 1;
+//     const maxPages = 3; // Limit to 3 pages to avoid timeout
+//     const targetTenders = 20;
+
+//     while (tenders.length < targetTenders && currentPage < maxPages) {
+//       try {
+//         currentPage++;
+//         console.log(`Trying to navigate to page ${currentPage}...`);
+
+//         // Click next page button
+//         const nextPageSuccess = await page.evaluate((pageNum) => {
+//           const pageButtons = document.querySelectorAll('#tbltenders_paginate .paginate_button:not(.previous):not(.next)');
+//           const targetButton = Array.from(pageButtons).find(btn => btn.textContent?.trim() === pageNum.toString());
+
+//           if (targetButton && !targetButton.classList.contains('current')) {
+//             const link = targetButton.querySelector('a');
+//             if (link) {
+//               (link as HTMLElement).click();
+//               return true;
+//             }
+//           }
+//           return false;
+//         }, currentPage);
+
+//         if (!nextPageSuccess) {
+//           console.log(`No more pages available (stopped at page ${currentPage - 1})`);
+//           break;
+//         }
+
+//         // Wait for page to load
+//         await page.waitForTimeout(2000);
+
+//         // Extract tenders from current page
+//         const pageTenders = await extractTendersFromPage();
+//         tenders.push(...pageTenders);
+//         console.log(`RGUKT Srikakulam: Page ${currentPage} - ${pageTenders.length} tenders (total: ${tenders.length})`);
+
+//         if (pageTenders.length === 0) {
+//           console.log("No more tenders found, stopping pagination");
+//           break;
+//         }
+
+//       } catch (pageError) {
+//         console.log(`Error on page ${currentPage}:`, pageError);
+//         break;
+//       }
+//     }
+
+//     console.log(`RGUKT Srikakulam: Successfully scraped ${tenders.length} tenders from ${currentPage} pages`);
+
+//   } catch (error) {
+//     console.error("Error in scrapeSrikakulamTenders:", error);
+//     handleScrapingError(error, "RGUKT Srikakulam");
+//     // Don't throw error, just return empty array
+//   } finally {
+//     if (browser) {
+//       try {
+//         await browser.close();
+//       } catch (error) {
+//         console.error("Error closing browser:", error);
+//       }
+//     }
+//   }
+
+//   return tenders;
+// }
+
+// export async function GET() {
+//   try {
+//     console.log("Starting tender fetch for RGUKT Srikakulam...");
+//     const tenders = await scrapeSrikakulamTenders();
+
+//     // If no tenders found, use fallback
+//     if (tenders.length === 0) {
+//       console.log("No tenders found, using fallback response");
+//       return NextResponse.json(createFallbackResponse("RGUKT Srikakulam"));
+//     }
+
+//     const response: APIResponse = {
+//       success: true,
+//       data: tenders,
+//       timestamp: new Date().toISOString(),
+//       source: "RGUKT Srikakulam",
+//       totalTenders: tenders.length,
+//       totalPages: 1,
+//       currentPage: 1,
+//     };
+
+//     return NextResponse.json(response);
+//   } catch (error) {
+//     console.error("Error in GET route:", error);
+
+//     // Always return fallback instead of error
+//     return NextResponse.json(createFallbackResponse("RGUKT Srikakulam"));
+//   }
+// }
+
+
 // app/api/tenders/route.ts
 import { NextResponse } from "next/server";
 import * as puppeteer from "puppeteer";
+import { cacheHelpers, CACHE_KEYS, CACHE_TTL } from "@/lib/redis";
+import { API_RESPONSE_LIMITS, parsePaginationParams, createPaginatedResponse } from "@/lib/scraper-utils";
 
 // Define types
 interface DownloadLink {
@@ -204,10 +456,10 @@ async function scrapeSrikakulamTenders(): Promise<{
     allTenders.push(...firstPageTenders);
     console.log(`Extracted ${firstPageTenders.length} tenders from page 1`);
 
-    // Navigate through remaining pages
+    // Navigate through remaining pages (limit to 3 pages total to get ~30 tenders)
     for (
       let currentPage = 2;
-      currentPage <= Math.min(totalPages, 43);
+      currentPage <= Math.min(totalPages, 3);
       currentPage++
     ) {
       try {
@@ -261,7 +513,11 @@ async function scrapeSrikakulamTenders(): Promise<{
 
     console.log(`Total tenders extracted: ${allTenders.length}`);
 
-    return { tenders: allTenders, totalPages, totalTenders };
+    // Limit to 30 tenders as requested
+    const limitedTenders = allTenders.slice(0, 30);
+    console.log(`Limited to ${limitedTenders.length} tenders`);
+
+    return { tenders: limitedTenders, totalPages, totalTenders };
   } catch (error) {
     console.error("Scraping error:", error);
     handleScrapingError(error, "RGUKT Srikakulam");
@@ -278,27 +534,39 @@ async function scrapeSrikakulamTenders(): Promise<{
 }
 
 // For API route pagination if needed
-export async function GET() {
+export async function GET(request: Request) {
   try {
     console.log("Starting tender fetch for RGUKT Srikakulam...");
-    const { tenders, totalPages, totalTenders } =
-      await scrapeSrikakulamTenders();
 
-    if (tenders.length === 0) {
+    const { searchParams } = new URL(request.url);
+    const pagination = parsePaginationParams(searchParams);
+    const cacheKey = CACHE_KEYS.tenderData('sklm');
+
+    const { tenders: allTenders, totalPages, totalTenders } = await cacheHelpers.getWithFallback(
+      cacheKey,
+      scrapeSrikakulamTenders,
+      CACHE_TTL.TENDER_DATA
+    );
+
+    // Create paginated response
+    const paginatedResult = createPaginatedResponse(allTenders, pagination);
+
+    if (paginatedResult.data.length === 0 && allTenders.length === 0) {
       console.warn(
         "No tenders found from RGUKT Srikakulam - this might indicate a scraping issue or genuinely no current tenders"
       );
     }
 
-    const response: APIResponse = {
+    const response = {
       success: true,
-      data: tenders,
+      ...paginatedResult,
       timestamp: new Date().toISOString(),
       source: "RGUKT Srikakulam",
-      message: tenders.length === 0 ? "No active tenders found" : undefined,
-      totalPages,
-      currentPage: 1,
-      totalTenders,
+      message: allTenders.length === 0 ? "No active tenders found" : undefined,
+      scraperInfo: {
+        totalPages,
+        totalTenders
+      }
     };
 
     return NextResponse.json(response);
@@ -315,7 +583,6 @@ export async function GET() {
     );
   }
 }
-
 
 
 

@@ -91,7 +91,8 @@ export const EnhancedTenderDashboard: React.FC = () => {
     }
 
     if (canAccess("all_colleges")) {
-      return ["all", "basar", "rkvalley", "ongole", "rgukt", "sklm"];
+      // Exclude RGUKT as it's temporarily disabled
+      return ["all", "basar", "rkvalley", "ongole", "sklm"];
     }
 
     // Basic plan - one college
@@ -136,7 +137,7 @@ export const EnhancedTenderDashboard: React.FC = () => {
 
           {canAccess("all_colleges") ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-              {["all", "basar", "rkvalley", "ongole", "rgukt", "sklm"].map(
+              {["all", "basar", "rkvalley", "ongole", "sklm"].map(
                 (college) => (
                   <label key={college} className="flex items-center space-x-2">
                     <input

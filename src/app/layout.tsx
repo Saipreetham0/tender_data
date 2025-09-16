@@ -42,6 +42,10 @@ import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { OptimizedAuthProvider } from "@/contexts/OptimizedAuthContext";
+import { QueryProvider } from "@/contexts/QueryProvider";
+import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 
 const inter = Inter({ subsets: ["latin"] });
@@ -136,9 +140,17 @@ export default function RootLayout({
         />
       </head>
       <body className={inter.className}>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <ErrorBoundary>
+          <AuthProvider>
+            <QueryProvider>
+              <OptimizedAuthProvider>
+                <SubscriptionProvider>
+                  {children}
+                </SubscriptionProvider>
+              </OptimizedAuthProvider>
+            </QueryProvider>
+          </AuthProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

@@ -1,38 +1,6 @@
-// src/lib/auth.ts
-import { createClient, PostgrestError } from "@supabase/supabase-js";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-// import { AuthOptions } from "next-auth";
-// import { SupabaseAdapter } from "@auth/supabase-adapter";
-// import GoogleProvider from "next-auth/providers/google";
-import "next-auth/jwt";
-
-// Extend the built-in session types
-declare module "next-auth" {
-  interface Session {
-    user: {
-      id: string;
-      name?: string | null;
-      email?: string | null;
-      image?: string | null;
-    };
-  }
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-  },
-  global: {
-    headers: {
-      'X-Client-Info': 'tender-data-app',
-    },
-  },
-});
+// Supabase Auth Integration
+import { supabase } from './supabase';
+import { AuthError, Session, User } from '@supabase/supabase-js';
 
 export interface UserProfile {
   id: string;
@@ -42,6 +10,8 @@ export interface UserProfile {
   organization?: string;
   phone?: string;
   preferences?: Record<string, string | number | boolean>;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface AuthUser {
@@ -51,112 +21,121 @@ export interface AuthUser {
 }
 
 // Auth helper functions
-export const auth = {
+export const authService = {
   // Sign in with magic link
   signInWithMagicLink: async (email: string) => {
-    const { data, error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-    return { data, error };
+    try {
+      const { data, error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      return { data, error };
+    } catch (error) {
+      return { data: null, error };
+    }
   },
 
-  // Sign in with Google
+  // Sign in with Google OAuth
   signInWithGoogle: async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-    return { data, error };
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      return { data, error };
+    } catch (error) {
+      return { data: null, error };
+    }
   },
 
   // Sign out
   signOut: async () => {
-    const { error } = await supabase.auth.signOut();
-    return { error };
+    try {
+      const { error } = await supabase.auth.signOut();
+      return { error };
+    } catch (error) {
+      return { error };
+    }
   },
 
   // Get current user
   getCurrentUser: async () => {
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser();
-    return { user, error };
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      return { user, error };
+    } catch (error) {
+      return { user: null, error };
+    }
   },
 
   // Get user profile
-  //   getUserProfile: async (userId: string): Promise<{ profile: UserProfile | null; error: any }> => {
-  getUserProfile: async (
-    userId: string
-  ): Promise<{ profile: UserProfile | null; error: PostgrestError | null }> => {
-    const { data, error } = await supabase
-      .from("user_profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
+  getUserProfile: async (userId: string): Promise<{ profile: UserProfile | null; error: any }> => {
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-    return { profile: data, error };
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        return { profile: null, error };
+      }
+
+      return { profile: data, error: null };
+    } catch (error) {
+      return { profile: null, error };
+    }
   },
 
   // Update user profile
   updateProfile: async (userId: string, updates: Partial<UserProfile>) => {
-    const { data, error } = await supabase
-      .from("user_profiles")
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", userId)
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', userId)
+        .select()
+        .single();
 
-    return { data, error };
+      return { data, error };
+    } catch (error) {
+      return { data: null, error };
+    }
   },
 
-  // Create user profile (for manual creation if needed)
+  // Create user profile
   createProfile: async (userId: string, profileData: Partial<UserProfile>) => {
-    const { data, error } = await supabase
-      .from("user_profiles")
-      .insert({
+    try {
+      const profile = {
         id: userId,
         ...profileData,
         created_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
+        updated_at: new Date().toISOString(),
+      };
 
-    return { data, error };
-  },
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .insert([profile])
+        .select()
+        .single();
+
+      return { data, error };
+    } catch (error) {
+      return { data: null, error };
+    }
+  }
 };
 
+// Export Supabase auth for backward compatibility
+export { supabase } from './supabase';
 
-// export const authOptions: AuthOptions = {
-//   providers: [
-//     GoogleProvider({
-//       clientId: process.env.GOOGLE_CLIENT_ID!,
-//       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-//     }),
-//   ],
-//   adapter: SupabaseAdapter({
-//     url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-//     secret: process.env.SUPABASE_SERVICE_ROLE_KEY!,
-//     supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, // Add this line
-//   }),
-//   callbacks: {
-//     session: async ({ session, user }) => {
-//       if (session?.user) {
-//         session.user.id = user.id;
-//       }
-//       return session;
-//     },
-//   },
-//   pages: {
-//     signIn: '/auth/signin',
-//     error: '/auth/error',
-//   },
-// };
+// Default export
+export default authService;

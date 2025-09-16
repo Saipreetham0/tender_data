@@ -16,7 +16,8 @@ import {
   Cog,
   LogOut,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  BookOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -58,6 +59,12 @@ const navigationItems = [
     permission: 'view_api_logs'
   },
   {
+    name: 'Database Tables',
+    href: '/admin/tables',
+    icon: Database,
+    permission: 'view_dashboard'
+  },
+  {
     name: 'Notifications',
     href: '/admin/notifications', 
     icon: Bell,
@@ -68,6 +75,12 @@ const navigationItems = [
     href: '/admin/health',
     icon: Activity,
     permission: 'view_system_logs'
+  },
+  {
+    name: 'API Documentation',
+    href: '/admin/api-docs',
+    icon: BookOpen,
+    permission: 'view_api_logs'
   },
   {
     name: 'Settings',

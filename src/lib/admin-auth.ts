@@ -1,5 +1,10 @@
 import { NextRequest } from 'next/server';
-import { supabase } from './auth';
+import { createClient } from '@supabase/supabase-js';
+
+// Use Supabase for database operations (keeping existing admin data)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 export interface AdminUser {
   id: string;
@@ -100,29 +105,48 @@ export async function getAdminPermissions(email: string): Promise<string[]> {
   }
 }
 
+// Verify Supabase token and check admin status
 export async function verifyAdminAuth(request: NextRequest): Promise<AdminUser | null> {
   try {
+    // Extract the Authorization header
     const authHeader = request.headers.get('Authorization');
-    const token = authHeader?.replace('Bearer ', '');
-    
-    if (!token) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return null;
     }
 
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    
+    // Verify the Supabase JWT token
     const { data: { user }, error } = await supabase.auth.getUser(token);
     
-    if (error || !user || !user.email) {
+    if (error || !user) {
+      console.error('Error verifying token:', error);
       return null;
     }
 
-    const adminRole = await getAdminRole(user.email);
+    // Check admin status using the user's email
+    return await verifyAdminAuthFromEmail(user.email!);
+  } catch (error) {
+    console.error('Admin auth verification error:', error);
+    return null;
+  }
+}
+
+// Alternative verification using email
+export async function verifyAdminAuthFromEmail(email: string): Promise<AdminUser | null> {
+  try {
+    if (!email) {
+      return null;
+    }
+
+    const adminRole = await getAdminRole(email);
     if (!adminRole || !adminRole.is_active) {
       return null;
     }
 
     return {
-      id: user.id,
-      email: user.email,
+      id: adminRole.user_id || email, // Use email as fallback ID
+      email: email,
       role: adminRole.role,
       permissions: adminRole.permissions
     };
